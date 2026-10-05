@@ -28,7 +28,6 @@ const {
 } = require('./database');
 
 
-resetDatabase();
 initDefaultSpawner('💀 Skelly', 0, 0);
 initDefaultSpawner('💥 Creeper', 0, 0);
 
