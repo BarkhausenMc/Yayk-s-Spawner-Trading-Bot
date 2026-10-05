@@ -114,15 +114,13 @@ client.on('interactionCreate', async (interaction) => {
 
     const { header, table } = await buildPanel();
 
-    const reply = await interaction.reply({
+    await interaction.reply({
       components: [header, table],
-      flags: MessageFlags.IsComponentsV2,
-      fetchReply: true
+      flags: MessageFlags.IsComponentsV2
     });
 
+    const reply = await interaction.fetchReply();
     savePanelMessage(interaction.guildId, interaction.channelId, reply.id);
-
-    await interaction.deleteReply();
   }
 
   if (interaction.commandName === 'preise-setzen') {
