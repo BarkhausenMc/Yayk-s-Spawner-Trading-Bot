@@ -6,7 +6,11 @@ const {
   ContainerBuilder,
   TextDisplayBuilder,
   SeparatorBuilder,
-  MessageFlags
+  MessageFlags,
+  ActionRow,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
 } = require('discord.js');
 
 const {
@@ -47,13 +51,17 @@ async function buildPanel() {
     `${spawner_name.padEnd(14)}${('🛒' + formatMillions(kaufpreis)).padEnd(14)}💰${formatMillions(verkaufspreis)}`
   ).join('\n');
 
+//====================
+//Spawner Panel Conatiner
+//====================
+
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         '# 🛒 • SPAWNER TRADING • 💰\n' +
         '*Yayks Spawner Trading*\n' +
         '*||Only Trusted Trader, Faire Preise 💜||*' +
-        '\n\n```SPAWNER        🛒KAUFEN     💰VERKAUF\n' +
+        '\n\n```SPAWNER      🛒KAUFEN     💰VERKAUF\n' +
         '─────────────────────────────────────────────\n' +
         rows +
         '\n─────────────────────────────────────────────```'
@@ -63,11 +71,42 @@ async function buildPanel() {
       new SeparatorBuilder()
         .setSpacing(1)
         .setDivider(true)
-    );
+    )
+    .addTextDisplayComponents()
+      new TextDisplayBuilder().setContent(
+        '💰 **VERKAUFEN** — Du **verkaufst** uns deine Spawner\n' +
+        '🛒 **ANKAUF** — Du **kaufst** unsere Spawner'
+      )
+    .addSeparatorComponents()
+      new SeparatorBuilder()
+        .setSpacing(1)
+        .setDivider(true)
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        'Klicke unten auf den `💰 VERKAUFEN` oder `🛒 ANKAUF` Button,\num einen Trade zu Starten.'
+      )
+    )
 
-  return container;
+    const spawnerBuyRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('spawner-kaufen')
+        .setLabel('Spawner Kaufen')
+        .setEmoji('🛒')
+        .setStyle(ButtonStyle.Primary),
+
+      new ButtonBuilder()
+        .setCustomId('spawner-verkaufen')
+        .setLabel('Spawner Verkaufen')
+        .setEmoji('💰')
+        .setStyle(ButtonStyle.Success)
+    )
+    return [container, spawnerBuyRow];
 }
 
+
+//====================
+//Spawner Panel Aktualisieren
+//====================
 async function updateExistingPanel(guildId) {
   const savedPanel = getPanelMessage(guildId);
   if (!savedPanel) {
@@ -94,6 +133,10 @@ async function updateExistingPanel(guildId) {
   }
 }
 
+//====================
+//Spawner Panel in Channel senden
+//====================
+
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -107,14 +150,19 @@ client.on('interactionCreate', async (interaction) => {
 
     const container = await buildPanel();
 
-    await interaction.reply({
+    const reply = await interaction.reply({
       components: [container],
-      flags: MessageFlags.IsComponentsV2
+      flags: MessageFlags.IsComponentsV2,
+      fetchReply: true
     });
 
-    const reply = await interaction.fetchReply();
     savePanelMessage(interaction.guildId, interaction.channelId, reply.id);
+    await interaction.deleteReply();
   }
+
+//====================
+//Spawner Preise setzen
+//====================
 
   if (interaction.commandName === 'preise-setzen') {
     const spawnerName = interaction.options.getString('spawner');
