@@ -276,11 +276,20 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (interaction.isStringSelectMenu()) {
-    const spawnerName = interaction.values[0];
-
     if (interaction.customId === 'spawner-kaufen-select') {
+      const spawnerName = interaction.values[0];
+
+      const spawnerPreis = getSpawnerPreis(spawnerName);
+
+      if (!spawnerPreis) {
+        return interaction.reply({
+          content: '❌ Dieser Spawner existiert nicht mehr.',
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
       const spawnerKaufenModal = new ModalBuilder()
-        .setCustomId(`spawner-kaufen-modal`)
+        .setCustomId(`spawner-kaufen-modal-${spawnerName}`)
         .setTitle('Spawner Kaufen');
 
       const minecraftName = new TextInputBuilder()
@@ -306,8 +315,19 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (interaction.customId === 'spawner-verkaufen-select') {
+      const spawnerName = interaction.values[0];
+
+      const spawnerPreis = getSpawnerPreis(spawnerName);
+
+      if (!spawnerPreis) {
+        return interaction.reply({
+          content: '❌ Dieser Spawner existiert nicht mehr.',
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
       const spawnerVerkaufenModal = new ModalBuilder()
-        .setCustomId(`spawner-verkaufen-modal`)
+        .setCustomId(`spawner-verkaufen-modal-${spawnerName}`)
         .setTitle('Spawner Verkaufen');
 
       const minecraftName = new TextInputBuilder()
@@ -337,9 +357,34 @@ client.on('interactionCreate', async (interaction) => {
     const minecraftName = interaction.fields.getTextInputValue('minecraft-name');
     const spawnerAnzahl = interaction.fields.getTextInputValue('spawner-anzahl');
 
-    if (interaction.customId === 'spawner-kaufen-modal') {
+    if (interaction.customId.startsWith('spawner-kaufen-modal-')) {
+      const spawnerName = interaction.customId.replace(
+        'spawner-kaufen-modal-',
+        ''
+      );
+
+      const spawnerPreis = getSpawnerPreis(spawnerName);
+
+      if (!spawnerPreis) {
+        return interaction.reply({
+          content: '❌ Dieser Spawner existiert nicht mehr.',
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+      const anzahl = Number(spawnerAnzahl);
+
+      if (!Number.isInteger(anzahl) || anzahl <= 0) {
+        return interaction.reply({
+          content: '❌ Bitte gib eine gültige Anzahl ein.',
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+      const gesamtpreis = spawnerPreis.kaufpreis * anzahl;
+
       const thread = await interaction.channel.threads.create({
-        name: `🛒 ${minecraftName} - ${spawnerAnzahl} Spawner`,
+        name: `🛒 ${minecraftName} - ${anzahl} ${spawnerName}`,
         type: 12,
         autoArchiveDuration: 1440,
         reason: 'Spawner Kauf Anfrage'
@@ -352,9 +397,7 @@ client.on('interactionCreate', async (interaction) => {
       );
 
       if (traderRole) {
-        const traders = traderRole.members;
-
-        for (const [memberId] of traders) {
+        for (const [memberId] of traderRole.members) {
           await thread.members.add(memberId);
         }
       }
@@ -363,7 +406,10 @@ client.on('interactionCreate', async (interaction) => {
         content:
           `# 🛒 Spawner Kauf Anfrage\n\n` +
           `**Minecraft Name:** ${minecraftName}\n` +
-          `**Anzahl:** ${spawnerAnzahl}\n` +
+          `**Spawner:** ${spawnerName}\n` +
+          `**Anzahl:** ${anzahl}\n` +
+          `**Preis pro Spawner:** ${formatMillions(spawnerPreis.kaufpreis)}\n` +
+          `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
           `**Discord:** ${interaction.user}\n\n` +
           `Ein Trader wird sich gleich um deine Anfrage kümmern.`
       });
@@ -383,9 +429,34 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    if (interaction.customId === 'spawner-verkaufen-modal') {
+    if (interaction.customId.startsWith('spawner-verkaufen-modal-')) {
+      const spawnerName = interaction.customId.replace(
+        'spawner-verkaufen-modal-',
+        ''
+      );
+
+      const spawnerPreis = getSpawnerPreis(spawnerName);
+
+      if (!spawnerPreis) {
+        return interaction.reply({
+          content: '❌ Dieser Spawner existiert nicht mehr.',
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+      const anzahl = Number(spawnerAnzahl);
+
+      if (!Number.isInteger(anzahl) || anzahl <= 0) {
+        return interaction.reply({
+          content: '❌ Bitte gib eine gültige Anzahl ein.',
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+      const gesamtpreis = spawnerPreis.verkaufspreis * anzahl;
+
       const thread = await interaction.channel.threads.create({
-        name: `💰 ${minecraftName} - ${spawnerAnzahl} Spawner`,
+        name: `💰 ${minecraftName} - ${anzahl} ${spawnerName}`,
         type: 12,
         autoArchiveDuration: 1440,
         reason: 'Spawner Verkauf Anfrage'
@@ -398,9 +469,7 @@ client.on('interactionCreate', async (interaction) => {
       );
 
       if (traderRole) {
-        const traders = traderRole.members;
-
-        for (const [memberId] of traders) {
+        for (const [memberId] of traderRole.members) {
           await thread.members.add(memberId);
         }
       }
@@ -409,7 +478,10 @@ client.on('interactionCreate', async (interaction) => {
         content:
           `# 💰 Spawner Verkauf Anfrage\n\n` +
           `**Minecraft Name:** ${minecraftName}\n` +
-          `**Anzahl:** ${spawnerAnzahl}\n` +
+          `**Spawner:** ${spawnerName}\n` +
+          `**Anzahl:** ${anzahl}\n` +
+          `**Preis pro Spawner:** ${formatMillions(spawnerPreis.verkaufspreis)}\n` +
+          `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
           `**Discord:** ${interaction.user}\n\n` +
           `Ein Trader wird sich gleich um deine Anfrage kümmern.`
       });
