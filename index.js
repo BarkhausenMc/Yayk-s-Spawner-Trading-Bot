@@ -125,8 +125,8 @@ async function updateExistingPanel(guildId) {
       return null;
     }
 
-    const [container, buttonRow] = await buildPanel();
-    await message.edit({ components: [container, buttonRow] });
+    const { container, spawnerBuyRow } = await buildPanel();  // ✅ Destructuring
+    await message.edit({ components: [container, spawnerBuyRow] });  // ✅ Beide Components
     return true;
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Panels:', error);
@@ -139,8 +139,6 @@ async function updateExistingPanel(guildId) {
 //====================
 
 client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-
   if (interaction.commandName === 'spawner-panel') {
     if (!interaction.member.roles.cache.has(process.env.ADMIN_ROLE_ID)) {
       return interaction.reply({
@@ -149,10 +147,10 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    const container = await buildPanel();
+    const { container, spawnerBuyRow } = await buildPanel();  
 
     const reply = await interaction.reply({
-      components: [container],
+      components: [container, spawnerBuyRow],  
       flags: MessageFlags.IsComponentsV2,
       fetchReply: true
     });
