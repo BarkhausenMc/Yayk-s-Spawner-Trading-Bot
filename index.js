@@ -282,7 +282,7 @@ client.on('interactionCreate', async (interaction) => {
 
     await thread.members.add(interaction.user.id);
 
-    const traderRole = interaction.guild.roles.cache.get(TRADER_ROLE_ID);
+    const traderRole = interaction.guild.roles.cache.get(process.env.TRADER_ROLE_ID);
 
     if (traderRole) {
       const traders = traderRole.members;
