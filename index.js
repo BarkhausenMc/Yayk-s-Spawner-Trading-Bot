@@ -122,20 +122,17 @@ function buildTradeContainer(trade) {
 
     statusText = '🟢 **Status:** Offen';
 
-    statusInfo =
-      'Ein Trader wird sich gleich um deine Anfrage kümmern.';
-
     buttons = [
       new ButtonBuilder()
         .setCustomId(`trade-claim-${trade.thread_id}`)
         .setLabel('Claim')
-        .setEmoji('🎯')
+        .setEmoji('🔒')
         .setStyle(ButtonStyle.Primary),
 
       new ButtonBuilder()
         .setCustomId(`trade-close-${trade.thread_id}`)
         .setLabel('Abbrechen')
-        .setEmoji('❌')
+        .setEmoji('🗑️')
         .setStyle(ButtonStyle.Danger)
     ];
   }
