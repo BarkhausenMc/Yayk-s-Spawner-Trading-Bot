@@ -404,17 +404,43 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
-  await thread.send({
-    content:
-      `# 🛒 Spawner Kauf Anfrage\n\n` +
+const ticketKaufenContainer = new ContainerBuilder()
+  .addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      '# 🛒 Spawner Kauf Anfrage'
+    )
+  )
+  .addSeparatorComponents(
+    new SeparatorBuilder()
+      .setSpacing(1)
+      .setDivider(true)
+  )
+  .addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
       `**Minecraft Name:** ${minecraftName}\n` +
       `**Spawner:** ${spawnerName}\n` +
       `**Anzahl:** ${anzahl}\n` +
       `**Preis pro Spawner:** ${formatMillions(spawnerPreis.kaufpreis)}\n` +
       `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
-      `**Discord:** ${interaction.user}\n\n` +
-      `Ein Trader wird sich gleich um deine Anfrage kümmern.`
-  });
+      `**Discord:** ${interaction.user}`
+    )
+  )
+  .addSeparatorComponents(
+    new SeparatorBuilder()
+      .setSpacing(1)
+      .setDivider(true)
+  )
+  .addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      'Ein Trader wird sich gleich um deine Anfrage kümmern.'
+    )
+  );
+
+await thread.send({
+  components: [ticketKaufenContainer],
+  flags: MessageFlags.IsComponentsV2
+});
+
 
   const threadCreatedContainer = new ContainerBuilder()
     .addTextDisplayComponents(
@@ -479,17 +505,43 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
-  await thread.send({
-    content:
-      `# 💰 Spawner Verkauf Anfrage\n\n` +
+const ticketVerkaufContainer = new ContainerBuilder()
+  .addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      '# 💰 Spawner Verkauf Anfrage'
+    )
+  )
+  .addSeparatorComponents(
+    new SeparatorBuilder()
+      .setSpacing(1)
+      .setDivider(true)
+  )
+  .addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
       `**Minecraft Name:** ${minecraftName}\n` +
       `**Spawner:** ${spawnerName}\n` +
       `**Anzahl:** ${anzahl}\n` +
       `**Preis pro Spawner:** ${formatMillions(spawnerPreis.verkaufspreis)}\n` +
       `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
-      `**Discord:** ${interaction.user}\n\n` +
-      `Ein Trader wird sich gleich um deine Anfrage kümmern.`
-  });
+      `**Discord:** ${interaction.user}`
+    )
+  )
+  .addSeparatorComponents(
+    new SeparatorBuilder()
+      .setSpacing(1)
+      .setDivider(true)
+  )
+  .addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      'Ein Trader wird sich gleich um deine Anfrage kümmern.'
+    )
+  );
+
+await thread.send({
+  components: [ticketVerkaufContainer],
+  flags: MessageFlags.IsComponentsV2
+});
+
 
   const threadCreatedContainer = new ContainerBuilder()
     .addTextDisplayComponents(
