@@ -6,23 +6,24 @@ const {
   ContainerBuilder,
   TextDisplayBuilder,
   SeparatorBuilder,
-  MessageFlags,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle
+  MessageFlags
 } = require('discord.js');
 
 const {
   initDefaultSpawner,
   getAllSpawnerPreise,
   getSpawnerPreis,
-  updateSpawnerPreis
+  updateSpawnerPreis,
+  resetDatabase,
+  savePanelMessage,
+  getPanelMessage
 } = require('./database');
 
 const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;
 
-initDefaultSpawner('💀 Skelly', 0, 0);
-initDefaultSpawner('💥 Creeper', 0, 0);
+resetDatabase();
+initDefaultSpawner('💀 Skelly', 14, 12);
+initDefaultSpawner('💥 Creeper', 20, 18);
 
 const client = new Client({
   intents: [
@@ -41,7 +42,7 @@ function formatMillions(millions) {
   return millions.toFixed(1) + 'M';
 }
 
-function buildPanelContent() {
+async function buildPanel() {
   const spawnerData = getAllSpawnerPreise();
   const rows = spawnerData.map(({ spawner_name, kaufpreis, verkaufspreis }) =>
     `${spawner_name.padEnd(14)}${('🛒' + formatMillions(kaufpreis)).padEnd(14)}💰${formatMillions(verkaufspreis)}`
@@ -71,72 +72,80 @@ function buildPanelContent() {
       )
     );
 
-  const refreshButton = new ActionRowBuilder()
-    .addComponents(
-      new ButtonBuilder()
-        .setCustomId('refresh_panel')
-        .setLabel('↻ Aktualisieren')
-        .setStyle(ButtonStyle.Primary)
-    );
+  return { header, table };
+}
 
-  return { header, table, refreshButton };
+async function updateExistingPanel(guildId) {
+  const savedPanel = getPanelMessage(guildId);
+  if (!savedPanel) {
+    return null;
+  }
+
+  try {
+    const channel = client.channels.cache.get(savedPanel.channel_id);
+    if (!channel || !channel.isTextBased()) {
+      return null;
+    }
+
+    const message = await channel.messages.fetch(savedPanel.message_id);
+    if (!message) {
+      return null;
+    }
+
+    const { header, table } = await buildPanel();
+    await message.edit({ components: [header, table] });
+    return true;
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren des Panels:', error);
+    return null;
+  }
 }
 
 client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand() && !interaction.isButton()) return;
+  if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.isButton() && interaction.customId === 'refresh_panel') {
+  if (interaction.commandName === 'spawner-panel') {
     if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
       return interaction.reply({
-        content: 'Du hast keine Berechtigung.',
+        content: 'Du hast keine Berechtigung, diesen Befehl zu nutzen.',
         flags: MessageFlags.Ephemeral
       });
     }
 
-    const { header, table, refreshButton } = buildPanelContent();
+    const { header, table } = await buildPanel();
 
-    await interaction.update({
-      components: [header, table, refreshButton]
+    const reply = await interaction.reply({
+      components: [header, table],
+      flags: MessageFlags.IsComponentsV2,
+      fetchReply: true
     });
+
+    savePanelMessage(interaction.guildId, interaction.channelId, reply.id);
+
+    await interaction.deleteReply();
   }
 
-  if (interaction.isChatInputCommand()) {
-    if (interaction.commandName === 'spawner-panel') {
-      if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
-        return interaction.reply({
-          content: 'Du hast keine Berechtigung, diesen Befehl zu nutzen.',
-          flags: MessageFlags.Ephemeral
-        });
-      }
+  if (interaction.commandName === 'preise-setzen') {
+    const spawnerName = interaction.options.getString('spawner');
+    const kaufpreis = interaction.options.getNumber('kauf');
+    const verkaufspreis = interaction.options.getNumber('verkauf');
 
-      const { header, table, refreshButton } = buildPanelContent();
-
-      await interaction.reply({
-        components: [header, table, refreshButton],
-        flags: MessageFlags.IsComponentsV2
-      });
-    }
-
-    if (interaction.commandName === 'preise-setzen') {
-      const spawnerName = interaction.options.getString('spawner');
-      const kaufpreis = interaction.options.getNumber('kauf');
-      const verkaufspreis = interaction.options.getNumber('verkauf');
-
-      const existingPrice = getSpawnerPreis(spawnerName);
-      if (!existingPrice) {
-        return interaction.reply({
-          content: `❌ Spawner "${spawnerName}" existiert nicht.`,
-          flags: MessageFlags.Ephemeral
-        });
-      }
-
-      updateSpawnerPreis(spawnerName, kaufpreis, verkaufspreis);
-
-      await interaction.reply({
-        content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${formatMillions(kaufpreis)}\n💰 Verkauf: ${formatMillions(verkaufspreis)}\n\n💡 Nutze den ↻ Aktualisieren-Button im Panel, um die Werte live zu sehen!`,
+    const existingPrice = getSpawnerPreis(spawnerName);
+    if (!existingPrice) {
+      return interaction.reply({
+        content: `❌ Spawner "${spawnerName}" existiert nicht.`,
         flags: MessageFlags.Ephemeral
       });
     }
+
+    updateSpawnerPreis(spawnerName, kaufpreis, verkaufspreis);
+
+    await interaction.reply({
+      content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${formatMillions(kaufpreis)}\n💰 Verkauf: ${formatMillions(verkaufspreis)}`,
+      flags: MessageFlags.Ephemeral
+    });
+
+    updateExistingPanel(interaction.guildId);
   }
 });
 

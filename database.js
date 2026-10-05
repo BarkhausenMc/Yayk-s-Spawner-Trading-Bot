@@ -12,6 +12,15 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS panel_messages (
+    guild_id TEXT PRIMARY KEY,
+    channel_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 function initDefaultSpawner(name, kauf, verkauf) {
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO spawner_preise (spawner_name, kaufpreis, verkaufspreis)
@@ -36,12 +45,25 @@ function updateSpawnerPreis(spawnerName, kauf, verkauf) {
   `).run(kauf, verkauf, spawnerName);
 }
 
+function savePanelMessage(guildId, channelId, messageId) {
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO panel_messages (guild_id, channel_id, message_id)
+    VALUES (?, ?, ?)
+  `);
+  stmt.run(guildId, channelId, messageId);
+}
+
+function getPanelMessage(guildId) {
+  return db.prepare('SELECT channel_id, message_id FROM panel_messages WHERE guild_id = ?').get(guildId);
+}
+
 function getAllSpawnerNamen() {
   return db.prepare('SELECT spawner_name FROM spawner_preise').all().map(row => row.spawner_name);
 }
 
 function resetDatabase() {
   db.prepare('DROP TABLE IF EXISTS spawner_preise').run();
+  db.prepare('DROP TABLE IF EXISTS panel_messages').run();
   db.exec(`
     CREATE TABLE IF NOT EXISTS spawner_preise (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +72,14 @@ function resetDatabase() {
       verkaufspreis REAL NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS panel_messages (
+      guild_id TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 }
@@ -61,5 +91,7 @@ module.exports = {
   getSpawnerPreis,
   updateSpawnerPreis,
   getAllSpawnerNamen,
-  resetDatabase
+  resetDatabase,
+  savePanelMessage,
+  getPanelMessage
 };
