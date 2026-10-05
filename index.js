@@ -268,10 +268,27 @@ client.on('interactionCreate', async (interaction) => {
   const spawnerAnzahl = interaction.fields.getTextInputValue('spawner-anzahl');
 
   if (interaction.customId === 'spawner-kaufen-modal') {
+    const thread = await createTradeThread(
+      interaction,
+      'kaufen',
+      minecraftName,
+      spawnerAnzahl
+    );
+
+    const threadCreatedContainer = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `✅ Dein Trade Ticket wurde erstellt:${thread}` 
+        )
+      );
+
     await interaction.reply({
-      content: '✅ Deine Anfrage wurde erstellt!',
-      flags: MessageFlags.Ephemeral
+      components: [threadCreatedContainer],
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
     });
+
+    return;
+  }
 
     const thread = await interaction.channel.threads.create({
       name: `🛒 ${minecraftName} - ${spawnerAnzahl} Spawner`,
@@ -305,10 +322,27 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (interaction.customId === 'spawner-verkaufen-modal') {
+    const thread = await createTradeThread(
+      interaction,
+      'verkaufen',
+      minecraftName,
+      spawnerAnzahl
+    );
+
+    const threadCreatedContainer = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `✅ Dein Trade Ticket wurde erstellt:${thread}` 
+        )
+      );
+
     await interaction.reply({
-      content: '✅ Deine Anfrage wurde erstellt!',
-      flags: MessageFlags.Ephemeral
+      components: [threadCreatedContainer],
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
     });
+
+    return;
+  }
 
     const thread = await interaction.channel.threads.create({
       name: `💰 ${minecraftName} - ${spawnerAnzahl} Spawner`,
@@ -339,9 +373,7 @@ client.on('interactionCreate', async (interaction) => {
     });
 
     return;
-  }
-}
-});
+  });
 
 
 client.login(process.env.DISCORD_BOT_TOKEN);
