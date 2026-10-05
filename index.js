@@ -264,116 +264,100 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (interaction.isModalSubmit()) {
-  const minecraftName = interaction.fields.getTextInputValue('minecraft-name');
-  const spawnerAnzahl = interaction.fields.getTextInputValue('spawner-anzahl');
+    const minecraftName = interaction.fields.getTextInputValue('minecraft-name');
+    const spawnerAnzahl = interaction.fields.getTextInputValue('spawner-anzahl');
 
-  if (interaction.customId === 'spawner-kaufen-modal') {
-    const thread = await createTradeThread(
-      interaction,
-      'kaufen',
-      minecraftName,
-      spawnerAnzahl
-    );
+    if (interaction.customId === 'spawner-kaufen-modal') {
+      const thread = await interaction.channel.threads.create({
+        name: `🛒 ${minecraftName} - ${spawnerAnzahl} Spawner`,
+        type: 12,
+        autoArchiveDuration: 1440,
+        reason: 'Spawner Kauf Anfrage'
+      });
 
-    const threadCreatedContainer = new ContainerBuilder()
-      .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          `✅ Dein Trade Ticket wurde erstellt:${thread}` 
-        )
+      await thread.members.add(interaction.user.id);
+
+      const traderRole = interaction.guild.roles.cache.get(
+        process.env.TRADER_ROLE_ID
       );
 
-    await interaction.reply({
-      components: [threadCreatedContainer],
-      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
-    });
+      if (traderRole) {
+        const traders = traderRole.members;
 
-    return;
-  }
-
-    const thread = await interaction.channel.threads.create({
-      name: `🛒 ${minecraftName} - ${spawnerAnzahl} Spawner`,
-      type: 12,
-      autoArchiveDuration: 1440,
-      reason: 'Spawner Kauf Anfrage'
-    });
-
-    await thread.members.add(interaction.user.id);
-
-    const traderRole = interaction.guild.roles.cache.get(process.env.TRADER_ROLE_ID);
-
-    if (traderRole) {
-      const traders = traderRole.members;
-
-      for (const [memberId] of traders) {
-        await thread.members.add(memberId);
+        for (const [memberId] of traders) {
+          await thread.members.add(memberId);
+        }
       }
+
+      await thread.send({
+        content:
+          `# 🛒 Spawner Kauf Anfrage\n\n` +
+          `**Minecraft Name:** ${minecraftName}\n` +
+          `**Anzahl:** ${spawnerAnzahl}\n` +
+          `**Discord:** ${interaction.user}\n\n` +
+          `Ein Trader wird sich gleich um deine Anfrage kümmern.`
+      });
+
+      const threadCreatedContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `✅ Dein Trade Ticket wurde erstellt: ${thread}`
+          )
+        );
+
+      await interaction.reply({
+        components: [threadCreatedContainer],
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+      });
+
+      return;
     }
 
-    await thread.send({
-      content:
-        `# 🛒 Spawner Kauf Anfrage\n\n` +
-        `**Minecraft Name:** ${minecraftName}\n` +
-        `**Anzahl:** ${spawnerAnzahl}\n` +
-        `**Discord:** ${interaction.user}\n\n` +
-        `Ein Trader wird sich gleich um deine Anfrage kümmern.`
-    });
+    if (interaction.customId === 'spawner-verkaufen-modal') {
+      const thread = await interaction.channel.threads.create({
+        name: `💰 ${minecraftName} - ${spawnerAnzahl} Spawner`,
+        type: 12,
+        autoArchiveDuration: 1440,
+        reason: 'Spawner Verkauf Anfrage'
+      });
 
-    return;
-  }
+      await thread.members.add(interaction.user.id);
 
-  if (interaction.customId === 'spawner-verkaufen-modal') {
-    const thread = await createTradeThread(
-      interaction,
-      'verkaufen',
-      minecraftName,
-      spawnerAnzahl
-    );
-
-    const threadCreatedContainer = new ContainerBuilder()
-      .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          `✅ Dein Trade Ticket wurde erstellt:${thread}` 
-        )
+      const traderRole = interaction.guild.roles.cache.get(
+        process.env.TRADER_ROLE_ID
       );
 
-    await interaction.reply({
-      components: [threadCreatedContainer],
-      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
-    });
+      if (traderRole) {
+        const traders = traderRole.members;
 
-    return;
-  }
-
-    const thread = await interaction.channel.threads.create({
-      name: `💰 ${minecraftName} - ${spawnerAnzahl} Spawner`,
-      type: 12,
-      autoArchiveDuration: 1440,
-      reason: 'Spawner Verkauf Anfrage'
-    });
-
-    await thread.members.add(interaction.user.id);
-
-    const traderRole = interaction.guild.roles.cache.get(process.env.TRADER_ROLE_ID);
-
-    if (traderRole) {
-      const traders = traderRole.members;
-
-      for (const [memberId] of traders) {
-        await thread.members.add(memberId);
+        for (const [memberId] of traders) {
+          await thread.members.add(memberId);
+        }
       }
+
+      await thread.send({
+        content:
+          `# 💰 Spawner Verkauf Anfrage\n\n` +
+          `**Minecraft Name:** ${minecraftName}\n` +
+          `**Anzahl:** ${spawnerAnzahl}\n` +
+          `**Discord:** ${interaction.user}\n\n` +
+          `Ein Trader wird sich gleich um deine Anfrage kümmern.`
+      });
+
+      const threadCreatedContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `✅ Dein Trade Ticket wurde erstellt: ${thread}`
+          )
+        );
+
+      await interaction.reply({
+        components: [threadCreatedContainer],
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+      });
+
+      return;
     }
-
-    await thread.send({
-      content:
-        `# 💰 Spawner Verkauf Anfrage\n\n` +
-        `**Minecraft Name:** ${minecraftName}\n` +
-        `**Anzahl:** ${spawnerAnzahl}\n` +
-        `**Discord:** ${interaction.user}\n\n` +
-        `Ein Trader wird sich gleich um deine Anfrage kümmern.`
-    });
-
-    return;
-  });
-
-
+  }
+});
 client.login(process.env.DISCORD_BOT_TOKEN);
