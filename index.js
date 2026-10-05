@@ -86,26 +86,39 @@ client.on('interactionCreate', async (interaction) => {
     });
   }
 
-  if (interaction.commandName === 'preise-setzen') {
-    const spawnerName = interaction.options.getString('spawner');
-    const kaufpreis = interaction.options.getNumber('kauf');
-    const verkaufspreis = interaction.options.getNumber('verkauf');
+if (interaction.commandName === 'preise-setzen') {
+  const spawnerName = interaction.options.getString('spawner');
+  const kaufpreis = interaction.options.getNumber('kauf');
+  const verkaufspreis = interaction.options.getNumber('verkauf');
 
-    const existingPrice = getSpawnerPreis(spawnerName);
-    if (!existingPrice) {
-      return interaction.reply({
-        content: `❌ Spawner "${spawnerName}" existiert nicht.`,
-        flags: MessageFlags.Ephemeral
-      });
-    }
+  console.log(`🔄 UPDATE: ${spawnerName} auf Kauf=${kaufpreis}M, Verkauf=${verkaufspreis}M`);
 
-    updateSpawnerPreis(spawnerName, kaufpreis, verkaufspreis);
+  const result = updateSpawnerPreis(spawnerName, kaufpreis, verkaufspreis);
+  console.log(`✅ Update Rows affected: ${result.changes}`);
 
-    await interaction.reply({
-      content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${formatMillions(kaufpreis)}\n💰 Verkauf: ${formatMillions(verkaufspreis)}`,
+  const existingPrice = getSpawnerPreis(spawnerName);
+  console.log(`📖 Neuladen aus DB: Kauf=${existingPrice.kaufpreis}, Verkauf=${existingPrice.verkaufspreis}`);
+
+  if (!existingPrice) {
+    return interaction.reply({
+      content: `❌ Spawner "${spawnerName}" existiert nicht.`,
       flags: MessageFlags.Ephemeral
     });
   }
+
+  await interaction.reply({
+    content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${formatMillions(kaufpreis)}\n💰 Verkauf: ${formatMillions(verkaufspreis)}`,
+    flags: MessageFlags.Ephemeral
+  });
+}
 });
+
+console.log('📊 DB Reset durchgeführt');
+console.log('💀 Skelly angelegt:', getSpawnerPreis('💀 Skelly'));
+console.log('💥 Creeper angelegt:', getSpawnerPreis('💥 Creeper'));
+console.log('Alle Spawner:', getAllSpawnerPreise());
+console.log('\n=== DATABASE STATUS ===');
+console.log('Alle Spawner in DB:', getAllSpawnerPreise());
+console.log('=======================\n');
 
 client.login(process.env.DISCORD_BOT_TOKEN);
