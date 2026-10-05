@@ -47,6 +47,10 @@ function getAllSpawnerNamen() {
   return db.prepare('SELECT spawner_name FROM spawner_preise').all().map(row => row.spawner_name);
 }
 
+function deleteSpawner(spawnerName) {
+  return db.prepare('DELETE FROM spawner_preise WHERE spawner_name = ?').run(spawnerName);
+}
+
 module.exports = {
   db,
   initDefaultSpawner,
@@ -54,5 +58,6 @@ module.exports = {
   getSpawnerPreis,
   updateSpawnerPreis,
   addSpawner,
-  getAllSpawnerNamen
+  getAllSpawnerNamen,
+  deleteSpawner
 };

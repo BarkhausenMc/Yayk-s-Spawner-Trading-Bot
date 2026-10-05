@@ -15,13 +15,13 @@ const {
   getSpawnerPreis,
   updateSpawnerPreis,
   addSpawner,
-  getAllSpawnerNamen
+  deleteSpawner
 } = require('./database');
 
-initDefaultSpawner('Blaze', 15000, 12000);
-initDefaultSpawner('Zombie', 8000, 6000);
-initDefaultSpawner('Skeleton', 9000, 7000);
-initDefaultSpawner('Enderman', 25000, 20000);
+const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;
+
+initDefaultSpawner('💀 Skelly', 0, 0);
+initDefaultSpawner('💥 Creeper', 0, 0);
 
 const client = new Client({
   intents: [
@@ -30,11 +30,15 @@ const client = new Client({
   ]
 });
 
+function formatMillions(millions) {
+  return millions >= 1000 ? (millions / 1000) + 'B' : millions + 'M';
+}
+
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'spawner-panel') {
-    if (!interaction.member.roles.cache.has(process.env.ADMIN_ROLE_ID)) {
+    if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
       return interaction.reply({
         content: 'Du hast keine Berechtigung, diesen Befehl zu nutzen.',
         flags: MessageFlags.Ephemeral
@@ -43,22 +47,15 @@ client.on('interactionCreate', async (interaction) => {
 
     const spawnerData = getAllSpawnerPreise();
 
-    if (spawnerData.length === 0) {
-      return interaction.reply({
-        content: 'Keine Spawner in der Datenbank gefunden.',
-        flags: MessageFlags.Ephemeral
-      });
-    }
-
     const rows = spawnerData.map(({ spawner_name, kaufpreis, verkaufspreis }) =>
-      `${spawner_name.padEnd(12)}${('🛒' + kaufpreis).padEnd(14)}💰${verkaufspreis}`
+      `${spawner_name.padEnd(14)}${('🛒' + formatMillions(kaufpreis)).padEnd(14)}💰${formatMillions(verkaufspreis)}`
     ).join('\n');
 
     const content =
-      '```SPAWNER     🛒ANKAUF     💰VERKAUF\n' +
-      '────────────────────────────────────\n' +
+      '```SPAWNER         🛒ANKAUF     💰VERKAUF\n' +
+      '─────────────────────────────────────────────\n' +
       rows +
-      '\n────────────────────────────────────```';
+      '\n─────────────────────────────────────────────```';
 
     const spawnerPanelContainer = new ContainerBuilder()
       .addTextDisplayComponents(
@@ -99,7 +96,7 @@ client.on('interactionCreate', async (interaction) => {
     updateSpawnerPreis(spawnerName, kaufpreis, verkaufspreis);
 
     await interaction.reply({
-      content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${kaufpreis}\n💰 Verkauf: ${verkaufspreis}`,
+      content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${formatMillions(kaufpreis)}\n💰 Verkauf: ${formatMillions(verkaufspreis)}`,
       flags: MessageFlags.Ephemeral
     });
   }
@@ -120,7 +117,7 @@ client.on('interactionCreate', async (interaction) => {
     addSpawner(name, kauf, verkauf);
 
     await interaction.reply({
-      content: `✅ Spawner "${name}" hinzugefügt!\n🛒 Kauf: ${kauf}\n💰 Verkauf: ${verkauf}`,
+      content: `✅ Spawner "${name}" hinzugefügt!\n🛒 Kauf: ${formatMillions(kauf)}\n💰 Verkauf: ${formatMillions(verkauf)}`,
       flags: MessageFlags.Ephemeral
     });
   }
@@ -128,15 +125,8 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.commandName === 'alle-preise') {
     const spawnerData = getAllSpawnerPreise();
 
-    if (spawnerData.length === 0) {
-      return interaction.reply({
-        content: 'Keine Spawner in der Datenbank gefunden.',
-        flags: MessageFlags.Ephemeral
-      });
-    }
-
     const rows = spawnerData.map(({ spawner_name, kaufpreis, verkaufspreis }) =>
-      `**${spawner_name}** - 🛒 ${kaufpreis} | 💰 ${verkaufspreis}`
+      `**${spawner_name}** - 🛒 ${formatMillions(kaufpreis)} | 💰 ${formatMillions(verkaufspreis)}`
     ).join('\n');
 
     const content =
@@ -147,6 +137,25 @@ client.on('interactionCreate', async (interaction) => {
 
     await interaction.reply({
       content,
+      flags: MessageFlags.Ephemeral
+    });
+  }
+
+  if (interaction.commandName === 'spawner-loeschen') {
+    const spawnerName = interaction.options.getString('spawner');
+
+    const existingPrice = getSpawnerPreis(spawnerName);
+    if (!existingPrice) {
+      return interaction.reply({
+        content: `❌ Spawner "${spawnerName}" existiert nicht.`,
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    deleteSpawner(spawnerName);
+
+    await interaction.reply({
+      content: `🗑️ Spawner "${spawnerName}" wurde gelöscht!`,
       flags: MessageFlags.Ephemeral
     });
   }
