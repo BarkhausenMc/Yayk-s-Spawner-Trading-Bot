@@ -357,149 +357,155 @@ client.on('interactionCreate', async (interaction) => {
     const minecraftName = interaction.fields.getTextInputValue('minecraft-name');
     const spawnerAnzahl = interaction.fields.getTextInputValue('spawner-anzahl');
 
-    if (interaction.customId.startsWith('spawner-kaufen-modal-')) {
-      const spawnerName = interaction.customId.replace(
-        'spawner-kaufen-modal-',
-        ''
-      );
+   if (interaction.customId.startsWith('spawner-kaufen-modal-')) {
+  await interaction.deferReply({
+    flags: MessageFlags.Ephemeral
+  });
 
-      const spawnerPreis = getSpawnerPreis(spawnerName);
+  const spawnerName = interaction.customId.replace(
+    'spawner-kaufen-modal-',
+    ''
+  );
 
-      if (!spawnerPreis) {
-        return interaction.reply({
-          content: '❌ Dieser Spawner existiert nicht mehr.',
-          flags: MessageFlags.Ephemeral
-        });
-      }
+  const spawnerPreis = getSpawnerPreis(spawnerName);
 
-      const anzahl = Number(spawnerAnzahl);
+  if (!spawnerPreis) {
+    return interaction.editReply({
+      content: '❌ Dieser Spawner existiert nicht mehr.'
+    });
+  }
 
-      if (!Number.isInteger(anzahl) || anzahl <= 0) {
-        return interaction.reply({
-          content: '❌ Bitte gib eine gültige Anzahl ein.',
-          flags: MessageFlags.Ephemeral
-        });
-      }
+  const anzahl = Number(spawnerAnzahl);
 
-      const gesamtpreis = spawnerPreis.kaufpreis * anzahl;
+  if (!Number.isInteger(anzahl) || anzahl <= 0) {
+    return interaction.editReply({
+      content: '❌ Bitte gib eine gültige Anzahl ein.'
+    });
+  }
 
-      const thread = await interaction.channel.threads.create({
-        name: `🛒 ${minecraftName} - ${anzahl} ${spawnerName}`,
-        type: 12,
-        autoArchiveDuration: 1440,
-        reason: 'Spawner Kauf Anfrage'
-      });
+  const gesamtpreis = spawnerPreis.kaufpreis * anzahl;
 
-      await thread.members.add(interaction.user.id);
+  const thread = await interaction.channel.threads.create({
+    name: `🛒 ${minecraftName} - ${anzahl} ${spawnerName}`,
+    type: 12,
+    autoArchiveDuration: 1440,
+    reason: 'Spawner Kauf Anfrage'
+  });
 
-      const traderRole = interaction.guild.roles.cache.get(
-        process.env.TRADER_ROLE_ID
-      );
+  await thread.members.add(interaction.user.id);
 
-      if (traderRole) {
-        for (const [memberId] of traderRole.members) {
-          await thread.members.add(memberId);
-        }
-      }
+  const traderRole = interaction.guild.roles.cache.get(
+    process.env.TRADER_ROLE_ID
+  );
 
-      await thread.send({
-        content:
-          `# 🛒 Spawner Kauf Anfrage\n\n` +
-          `**Minecraft Name:** ${minecraftName}\n` +
-          `**Spawner:** ${spawnerName}\n` +
-          `**Anzahl:** ${anzahl}\n` +
-          `**Preis pro Spawner:** ${formatMillions(spawnerPreis.kaufpreis)}\n` +
-          `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
-          `**Discord:** ${interaction.user}\n\n` +
-          `Ein Trader wird sich gleich um deine Anfrage kümmern.`
-      });
-
-      const threadCreatedContainer = new ContainerBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `✅ Dein Trade Ticket wurde erstellt: ${thread}`
-          )
-        );
-
-      await interaction.reply({
-        components: [threadCreatedContainer],
-        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
-      });
-
-      return;
+  if (traderRole) {
+    for (const [memberId] of traderRole.members) {
+      await thread.members.add(memberId);
     }
+  }
 
-    if (interaction.customId.startsWith('spawner-verkaufen-modal-')) {
-      const spawnerName = interaction.customId.replace(
-        'spawner-verkaufen-modal-',
-        ''
-      );
+  await thread.send({
+    content:
+      `# 🛒 Spawner Kauf Anfrage\n\n` +
+      `**Minecraft Name:** ${minecraftName}\n` +
+      `**Spawner:** ${spawnerName}\n` +
+      `**Anzahl:** ${anzahl}\n` +
+      `**Preis pro Spawner:** ${formatMillions(spawnerPreis.kaufpreis)}\n` +
+      `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
+      `**Discord:** ${interaction.user}\n\n` +
+      `Ein Trader wird sich gleich um deine Anfrage kümmern.`
+  });
 
-      const spawnerPreis = getSpawnerPreis(spawnerName);
+  const threadCreatedContainer = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `✅ Dein Trade Ticket wurde erstellt: ${thread}`
+      )
+    );
 
-      if (!spawnerPreis) {
-        return interaction.reply({
-          content: '❌ Dieser Spawner existiert nicht mehr.',
-          flags: MessageFlags.Ephemeral
-        });
-      }
+  await interaction.editReply({
+    components: [threadCreatedContainer],
+    flags: MessageFlags.IsComponentsV2
+  });
 
-      const anzahl = Number(spawnerAnzahl);
+  return;
+}
 
-      if (!Number.isInteger(anzahl) || anzahl <= 0) {
-        return interaction.reply({
-          content: '❌ Bitte gib eine gültige Anzahl ein.',
-          flags: MessageFlags.Ephemeral
-        });
-      }
 
-      const gesamtpreis = spawnerPreis.verkaufspreis * anzahl;
+   if (interaction.customId.startsWith('spawner-verkaufen-modal-')) {
+  await interaction.deferReply({
+    flags: MessageFlags.Ephemeral
+  });
 
-      const thread = await interaction.channel.threads.create({
-        name: `💰 ${minecraftName} - ${anzahl} ${spawnerName}`,
-        type: 12,
-        autoArchiveDuration: 1440,
-        reason: 'Spawner Verkauf Anfrage'
-      });
+  const spawnerName = interaction.customId.replace(
+    'spawner-verkaufen-modal-',
+    ''
+  );
 
-      await thread.members.add(interaction.user.id);
+  const spawnerPreis = getSpawnerPreis(spawnerName);
 
-      const traderRole = interaction.guild.roles.cache.get(
-        process.env.TRADER_ROLE_ID
-      );
+  if (!spawnerPreis) {
+    return interaction.editReply({
+      content: '❌ Dieser Spawner existiert nicht mehr.'
+    });
+  }
 
-      if (traderRole) {
-        for (const [memberId] of traderRole.members) {
-          await thread.members.add(memberId);
-        }
-      }
+  const anzahl = Number(spawnerAnzahl);
 
-      await thread.send({
-        content:
-          `# 💰 Spawner Verkauf Anfrage\n\n` +
-          `**Minecraft Name:** ${minecraftName}\n` +
-          `**Spawner:** ${spawnerName}\n` +
-          `**Anzahl:** ${anzahl}\n` +
-          `**Preis pro Spawner:** ${formatMillions(spawnerPreis.verkaufspreis)}\n` +
-          `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
-          `**Discord:** ${interaction.user}\n\n` +
-          `Ein Trader wird sich gleich um deine Anfrage kümmern.`
-      });
+  if (!Number.isInteger(anzahl) || anzahl <= 0) {
+    return interaction.editReply({
+      content: '❌ Bitte gib eine gültige Anzahl ein.'
+    });
+  }
 
-      const threadCreatedContainer = new ContainerBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `✅ Dein Trade Ticket wurde erstellt: ${thread}`
-          )
-        );
+  const gesamtpreis = spawnerPreis.verkaufspreis * anzahl;
 
-      await interaction.reply({
-        components: [threadCreatedContainer],
-        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
-      });
+  const thread = await interaction.channel.threads.create({
+    name: `💰 ${minecraftName} - ${anzahl} ${spawnerName}`,
+    type: 12,
+    autoArchiveDuration: 1440,
+    reason: 'Spawner Verkauf Anfrage'
+  });
 
-      return;
+  await thread.members.add(interaction.user.id);
+
+  const traderRole = interaction.guild.roles.cache.get(
+    process.env.TRADER_ROLE_ID
+  );
+
+  if (traderRole) {
+    for (const [memberId] of traderRole.members) {
+      await thread.members.add(memberId);
     }
+  }
+
+  await thread.send({
+    content:
+      `# 💰 Spawner Verkauf Anfrage\n\n` +
+      `**Minecraft Name:** ${minecraftName}\n` +
+      `**Spawner:** ${spawnerName}\n` +
+      `**Anzahl:** ${anzahl}\n` +
+      `**Preis pro Spawner:** ${formatMillions(spawnerPreis.verkaufspreis)}\n` +
+      `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
+      `**Discord:** ${interaction.user}\n\n` +
+      `Ein Trader wird sich gleich um deine Anfrage kümmern.`
+  });
+
+  const threadCreatedContainer = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `✅ Dein Trade Ticket wurde erstellt: ${thread}`
+      )
+    );
+
+  await interaction.editReply({
+    components: [threadCreatedContainer],
+    flags: MessageFlags.IsComponentsV2
+  });
+
+  return;
+}
+
   }
 });
 
