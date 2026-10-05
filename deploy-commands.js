@@ -23,7 +23,7 @@ const commands = [
         )
     )
     .addNumberOption(option =>
-      option.setName('kauf')
+      option.setName('kaufen')
         .setDescription('Neuer Kaufpreis (in Millionen, z.B. 14 oder 14.5)')
         .setRequired(true)
         .setMinValue(0)

@@ -9,7 +9,10 @@ const {
   MessageFlags,
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonStyle
+  ButtonStyle,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle
 } = require('discord.js');
 
 const {
@@ -166,7 +169,9 @@ client.on('interactionCreate', async (interaction) => {
 
     return;
   }
+});
 
+client.on('interactionCreate', async (interaction) => {
   if (interaction.commandName === 'preise-setzen') {
     const spawnerName = interaction.options.getString('spawner');
     const kaufpreis = interaction.options.getNumber('kauf');
@@ -195,8 +200,122 @@ client.on('interactionCreate', async (interaction) => {
       flags: MessageFlags.Ephemeral
     });
 
+
+
     await updateExistingPanel(interaction.guildId);
   }
 });
+
+client.on('interactionCreate', async (interaction) => {
+  if (interaction.isButton()) {
+    if (interaction.customId === 'spawner-kaufen') {
+      const spawnerKaufenModal = new ModalBuilder()
+        .setCustomId('spawner-kaufen-modal')
+        .setTitle('Spawner Kaufen');
+
+      const minecraftName = new TextInputBuilder()
+        .setCustomId('minecraft-name')
+        .setLabel('Wie lautet dein Minecraft Name?')
+        .setPlaceholder('z.B. yayk')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      const spawnerAnzahl = new TextInputBuilder()
+        .setCustomId('spawner-anzahl')
+        .setLabel('Wie viele Spawner möchtest du kaufen?')
+        .setPlaceholder('z.B. 10')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      spawnerKaufenModal.addComponents(
+        new ActionRowBuilder().addComponents(minecraftName),
+        new ActionRowBuilder().addComponents(spawnerAnzahl)
+      );
+
+      return interaction.showModal(spawnerKaufenModal);
+    }
+
+    if (interaction.customId === 'spawner-verkaufen') {
+      const spawnerVerkaufenModal = new ModalBuilder()
+        .setCustomId('spawner-verkaufen-modal')
+        .setTitle('Spawner Verkaufen');
+
+      const minecraftName = new TextInputBuilder()
+        .setCustomId('minecraft-name')
+        .setLabel('Wie lautet dein Minecraft Name?')
+        .setPlaceholder('z.B. yayk')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      const spawnerAnzahl = new TextInputBuilder()
+        .setCustomId('spawner-anzahl')
+        .setLabel('Wie viele Spawner möchtest du verkaufen?')
+        .setPlaceholder('z.B. 10')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      spawnerVerkaufenModal.addComponents(
+        new ActionRowBuilder().addComponents(minecraftName),
+        new ActionRowBuilder().addComponents(spawnerAnzahl)
+      );
+
+      return interaction.showModal(spawnerVerkaufenModal);
+    }
+  }
+
+  if (interaction.isModalSubmit()) {
+    const minecraftName = interaction.fields.getTextInputValue('minecraft-name');
+    const spawnerAnzahl = interaction.fields.getTextInputValue('spawner-anzahl');
+
+    if (interaction.customId === 'spawner-kaufen-modal') {
+      await interaction.reply({
+        content: '✅ Deine Anfrage wurde erstellt!',
+        flags: MessageFlags.Ephemeral
+      });
+
+      const thread = await interaction.channel.threads.create({
+        name: `🛒 ${minecraftName} - ${spawnerAnzahl} Spawner`,
+        autoArchiveDuration: 1440,
+        reason: 'Spawner Kauf Anfrage'
+      });
+
+      await thread.send({
+        content:
+          `# 🛒 Spawner Kauf Anfrage\n\n` +
+          `**Minecraft Name:** ${minecraftName}\n` +
+          `**Anzahl:** ${spawnerAnzahl}\n` +
+          `**Discord:** ${interaction.user}\n\n` +
+          `Ein Teammitglied wird sich gleich um deine Anfrage kümmern.`
+      });
+
+      return;
+    }
+
+    if (interaction.customId === 'spawner-verkaufen-modal') {
+      await interaction.reply({
+        content: '✅ Deine Anfrage wurde erstellt!',
+        flags: MessageFlags.Ephemeral
+      });
+
+      const thread = await interaction.channel.threads.create({
+        name: `💰 ${minecraftName} - ${spawnerAnzahl} Spawner`,
+        autoArchiveDuration: 1440,
+        reason: 'Spawner Verkauf Anfrage'
+      });
+
+      await thread.send({
+        content:
+          `# 💰 Spawner Verkauf Anfrage\n\n` +
+          `**Minecraft Name:** ${minecraftName}\n` +
+          `**Anzahl:** ${spawnerAnzahl}\n` +
+          `**Discord:** ${interaction.user}\n\n` +
+          `Ein Teammitglied wird sich gleich um deine Anfrage kümmern.`
+      });
+
+      return;
+    }
+  }
+});
+
 
 client.login(process.env.DISCORD_BOT_TOKEN);
