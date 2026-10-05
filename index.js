@@ -418,7 +418,7 @@ const ticketKaufenContainer = new ContainerBuilder()
   .addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
       '# 🛒 • Spawner Kaufen\n' +
-      `🤝 • Handel #${tradeNumber}`
+      `**🤝 • Handel #${tradeNumber}**`
     )
   )
   .addSeparatorComponents(
@@ -531,7 +531,7 @@ const ticketVerkaufContainer = new ContainerBuilder()
   .addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
       '# 💰 Spawner Verkauf Anfrage\n' +
-      `🤝 • Handel #${tradeNumber}`
+      `**🤝 • Handel #${tradeNumber}**`
     )
   )
   .addSeparatorComponents(
