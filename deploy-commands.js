@@ -17,6 +17,10 @@ const commands = [
       option.setName('spawner')
         .setDescription('Name des Spawners')
         .setRequired(true)
+        .setChoices(
+          { name: '💀 Skelly', value: '💀 Skelly' },
+          { name: '💥 Creeper', value: '💥 Creeper' }
+        )
     )
     .addIntegerOption(option =>
       option.setName('kauf')
@@ -26,35 +30,6 @@ const commands = [
     .addIntegerOption(option =>
       option.setName('verkauf')
         .setDescription('Neuer Verkaufspreis (in Millionen, z.B. 12 für 12M)')
-        .setRequired(true)
-    ),
-  new SlashCommandBuilder()
-    .setName('spawner-hinzufuegen')
-    .setDescription('Neuen Spawner zur Datenbank hinzufügen')
-    .addStringOption(option =>
-      option.setName('name')
-        .setDescription('Name des Spawners')
-        .setRequired(true)
-    )
-    .addIntegerOption(option =>
-      option.setName('kauf')
-        .setDescription('Anfangskaufpreis (in Millionen)')
-        .setRequired(true)
-    )
-    .addIntegerOption(option =>
-      option.setName('verkauf')
-        .setDescription('Anfangsverkaufspreis (in Millionen)')
-        .setRequired(true)
-    ),
-  new SlashCommandBuilder()
-    .setName('alle-preise')
-    .setDescription('Zeigt alle gespeicherten Spawner Preise'),
-  new SlashCommandBuilder()
-    .setName('spawner-loeschen')
-    .setDescription('Spawner aus der Datenbank entfernen')
-    .addStringOption(option =>
-      option.setName('spawner')
-        .setDescription('Name des Spawners')
         .setRequired(true)
     )
 ];
