@@ -1571,34 +1571,52 @@ client.on('interactionCreate', async interaction => {
         );
 
 
-        const traderRole =
-          interaction.guild.roles.cache.get(
-            process.env.TRADER_ROLE_ID
-          );
+const traderRole = interaction.guild.roles.cache.get(
+  process.env.TRADER_ROLE_ID
+);
 
+if (traderRole) {
+  try {
+    // Alle Guild-Mitglieder laden
+    const members = await interaction.guild.members.fetch();
 
-        if (traderRole) {
+    // Mitglieder mit Trader-Rolle finden
+    const traders = members.filter(member =>
+      member.roles.cache.has(traderRole.id)
+    );
 
-          for (
-            const [memberId]
-            of traderRole.members
-          ) {
+    // Jeden Trader zum Thread hinzufügen
+    for (const [memberId] of traders) {
+      try {
+        await thread.members.add(memberId);
 
-            try {
+        console.log(
+          `✅ Trader ${memberId} wurde zu Thread ${thread.id} hinzugefügt.`
+        );
+      } catch (error) {
+        console.error(
+          `❌ Trader ${memberId} konnte nicht hinzugefügt werden:`,
+          error
+        );
+      }
+    }
 
-              await thread.members.add(
-                memberId
-              );
+    console.log(
+      `👥 ${traders.size} Trader wurden zum Ticket ${thread.id} hinzugefügt.`
+    );
 
-            } catch (error) {
+  } catch (error) {
+    console.error(
+      '❌ Fehler beim Hinzufügen der Trader:',
+      error
+    );
+  }
+} else {
+  console.error(
+    `❌ Trader-Rolle nicht gefunden. ID: ${process.env.TRADER_ROLE_ID}`
+  );
+}
 
-              console.error(
-                `Trader ${memberId} konnte nicht hinzugefügt werden:`,
-                error
-              );
-            }
-          }
-        }
 
 
         createTrade({
@@ -1758,34 +1776,52 @@ client.on('interactionCreate', async interaction => {
         );
 
 
-        const traderRole =
-          interaction.guild.roles.cache.get(
-            process.env.TRADER_ROLE_ID
-          );
+        const traderRole = interaction.guild.roles.cache.get(
+  process.env.TRADER_ROLE_ID
+);
 
+if (traderRole) {
+  try {
+    // Alle Guild-Mitglieder laden
+    const members = await interaction.guild.members.fetch();
 
-        if (traderRole) {
+    // Mitglieder mit Trader-Rolle finden
+    const traders = members.filter(member =>
+      member.roles.cache.has(traderRole.id)
+    );
 
-          for (
-            const [memberId]
-            of traderRole.members
-          ) {
+    // Jeden Trader zum Thread hinzufügen
+    for (const [memberId] of traders) {
+      try {
+        await thread.members.add(memberId);
 
-            try {
+        console.log(
+          `✅ Trader ${memberId} wurde zu Thread ${thread.id} hinzugefügt.`
+        );
+      } catch (error) {
+        console.error(
+          `❌ Trader ${memberId} konnte nicht hinzugefügt werden:`,
+          error
+        );
+      }
+    }
 
-              await thread.members.add(
-                memberId
-              );
+    console.log(
+      `👥 ${traders.size} Trader wurden zum Ticket ${thread.id} hinzugefügt.`
+    );
 
-            } catch (error) {
+  } catch (error) {
+    console.error(
+      '❌ Fehler beim Hinzufügen der Trader:',
+      error
+    );
+  }
+} else {
+  console.error(
+    `❌ Trader-Rolle nicht gefunden. ID: ${process.env.TRADER_ROLE_ID}`
+  );
+}
 
-              console.error(
-                `Trader ${memberId} konnte nicht hinzugefügt werden:`,
-                error
-              );
-            }
-          }
-        }
 
 
         createTrade({
