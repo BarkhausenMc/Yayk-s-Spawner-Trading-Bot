@@ -52,7 +52,7 @@ client.on('interactionCreate', async (interaction) => {
     ).join('\n');
 
     const content =
-      '```SPAWNER         🛒ANKAUF     💰VERKAUF\n' +
+      '```SPAWNER       🛒KAUFEN     💰VERKAUF\n' +
       '─────────────────────────────────────────────\n' +
       rows +
       '\n─────────────────────────────────────────────```';
