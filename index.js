@@ -264,57 +264,83 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   if (interaction.isModalSubmit()) {
-    const minecraftName = interaction.fields.getTextInputValue('minecraft-name');
-    const spawnerAnzahl = interaction.fields.getTextInputValue('spawner-anzahl');
+  const minecraftName = interaction.fields.getTextInputValue('minecraft-name');
+  const spawnerAnzahl = interaction.fields.getTextInputValue('spawner-anzahl');
 
-    if (interaction.customId === 'spawner-kaufen-modal') {
-      await interaction.reply({
-        content: '✅ Deine Anfrage wurde erstellt!',
-        flags: MessageFlags.Ephemeral
-      });
+  if (interaction.customId === 'spawner-kaufen-modal') {
+    await interaction.reply({
+      content: '✅ Deine Anfrage wurde erstellt!',
+      flags: MessageFlags.Ephemeral
+    });
 
-      const thread = await interaction.channel.threads.create({
-        name: `🛒 ${minecraftName} - ${spawnerAnzahl} Spawner`,
-        autoArchiveDuration: 1440,
-        reason: 'Spawner Kauf Anfrage'
-      });
+    const thread = await interaction.channel.threads.create({
+      name: `🛒 ${minecraftName} - ${spawnerAnzahl} Spawner`,
+      type: 12,
+      autoArchiveDuration: 1440,
+      reason: 'Spawner Kauf Anfrage'
+    });
 
-      await thread.send({
-        content:
-          `# 🛒 Spawner Kauf Anfrage\n\n` +
-          `**Minecraft Name:** ${minecraftName}\n` +
-          `**Anzahl:** ${spawnerAnzahl}\n` +
-          `**Discord:** ${interaction.user}\n\n` +
-          `Ein Teammitglied wird sich gleich um deine Anfrage kümmern.`
-      });
+    await thread.members.add(interaction.user.id);
 
-      return;
+    const traderRole = interaction.guild.roles.cache.get(TRADER_ROLE_ID);
+
+    if (traderRole) {
+      const traders = traderRole.members;
+
+      for (const [memberId] of traders) {
+        await thread.members.add(memberId);
+      }
     }
 
-    if (interaction.customId === 'spawner-verkaufen-modal') {
-      await interaction.reply({
-        content: '✅ Deine Anfrage wurde erstellt!',
-        flags: MessageFlags.Ephemeral
-      });
+    await thread.send({
+      content:
+        `# 🛒 Spawner Kauf Anfrage\n\n` +
+        `**Minecraft Name:** ${minecraftName}\n` +
+        `**Anzahl:** ${spawnerAnzahl}\n` +
+        `**Discord:** ${interaction.user}\n\n` +
+        `Ein Trader wird sich gleich um deine Anfrage kümmern.`
+    });
 
-      const thread = await interaction.channel.threads.create({
-        name: `💰 ${minecraftName} - ${spawnerAnzahl} Spawner`,
-        autoArchiveDuration: 1440,
-        reason: 'Spawner Verkauf Anfrage'
-      });
-
-      await thread.send({
-        content:
-          `# 💰 Spawner Verkauf Anfrage\n\n` +
-          `**Minecraft Name:** ${minecraftName}\n` +
-          `**Anzahl:** ${spawnerAnzahl}\n` +
-          `**Discord:** ${interaction.user}\n\n` +
-          `Ein Teammitglied wird sich gleich um deine Anfrage kümmern.`
-      });
-
-      return;
-    }
+    return;
   }
+
+  if (interaction.customId === 'spawner-verkaufen-modal') {
+    await interaction.reply({
+      content: '✅ Deine Anfrage wurde erstellt!',
+      flags: MessageFlags.Ephemeral
+    });
+
+    const thread = await interaction.channel.threads.create({
+      name: `💰 ${minecraftName} - ${spawnerAnzahl} Spawner`,
+      type: 12,
+      autoArchiveDuration: 1440,
+      reason: 'Spawner Verkauf Anfrage'
+    });
+
+    await thread.members.add(interaction.user.id);
+
+    const traderRole = interaction.guild.roles.cache.get(process.env.TRADER_ROLE_ID);
+
+    if (traderRole) {
+      const traders = traderRole.members;
+
+      for (const [memberId] of traders) {
+        await thread.members.add(memberId);
+      }
+    }
+
+    await thread.send({
+      content:
+        `# 💰 Spawner Verkauf Anfrage\n\n` +
+        `**Minecraft Name:** ${minecraftName}\n` +
+        `**Anzahl:** ${spawnerAnzahl}\n` +
+        `**Discord:** ${interaction.user}\n\n` +
+        `Ein Trader wird sich gleich um deine Anfrage kümmern.`
+    });
+
+    return;
+  }
+}
 });
 
 
