@@ -125,8 +125,8 @@ async function updateExistingPanel(guildId) {
       return null;
     }
 
-    const container = await buildPanel();
-    await message.edit({ components: [container] });
+    const [container, buttonRow] = await buildPanel();
+    await message.edit({ components: [container, buttonRow] });
     return true;
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Panels:', error);
