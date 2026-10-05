@@ -6,20 +6,21 @@ const {
   ContainerBuilder,
   TextDisplayBuilder,
   SeparatorBuilder,
-  MessageFlags
+  MessageFlags,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
 } = require('discord.js');
 
 const {
   initDefaultSpawner,
   getAllSpawnerPreise,
   getSpawnerPreis,
-  updateSpawnerPreis,
-  resetDatabase
+  updateSpawnerPreis
 } = require('./database');
 
 const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;
 
-resetDatabase();
 initDefaultSpawner('💀 Skelly', 0, 0);
 initDefaultSpawner('💥 Creeper', 0, 0);
 
@@ -40,85 +41,103 @@ function formatMillions(millions) {
   return millions.toFixed(1) + 'M';
 }
 
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+function buildPanelContent() {
+  const spawnerData = getAllSpawnerPreise();
+  const rows = spawnerData.map(({ spawner_name, kaufpreis, verkaufspreis }) =>
+    `${spawner_name.padEnd(14)}${('🛒' + formatMillions(kaufpreis)).padEnd(14)}💰${formatMillions(verkaufspreis)}`
+  ).join('\n');
 
-  if (interaction.commandName === 'spawner-panel') {
+  const header = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        '# 🛒 • SPAWNER TRADING • 💰\n' +
+        '*Yayks Spawner Trading*\n' +
+        '*||Only Trusted Trader, Faire Preise 💜||*'
+      )
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder()
+        .setSpacing(1)
+        .setDivider(true)
+    );
+
+  const table = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        '```SPAWNER         🛒ANKAUF     💰VERKAUF\n' +
+        '─────────────────────────────────────────────\n' +
+        rows +
+        '\n─────────────────────────────────────────────```'
+      )
+    );
+
+  const refreshButton = new ActionRowBuilder()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId('refresh_panel')
+        .setLabel('↻ Aktualisieren')
+        .setStyle(ButtonStyle.Primary)
+    );
+
+  return { header, table, refreshButton };
+}
+
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand() && !interaction.isButton()) return;
+
+  if (interaction.isButton() && interaction.customId === 'refresh_panel') {
     if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
       return interaction.reply({
-        content: 'Du hast keine Berechtigung, diesen Befehl zu nutzen.',
+        content: 'Du hast keine Berechtigung.',
         flags: MessageFlags.Ephemeral
       });
     }
 
-    const spawnerData = getAllSpawnerPreise();
+    const { header, table, refreshButton } = buildPanelContent();
 
-    const rows = spawnerData.map(({ spawner_name, kaufpreis, verkaufspreis }) =>
-      `${spawner_name.padEnd(14)}${('🛒' + formatMillions(kaufpreis)).padEnd(14)}💰${formatMillions(verkaufspreis)}`
-    ).join('\n');
-
-    const content =
-      '```SPAWNER         🛒ANKAUF     💰VERKAUF\n' +
-      '─────────────────────────────────────────────\n' +
-      rows +
-      '\n─────────────────────────────────────────────```';
-
-    const spawnerPanelContainer = new ContainerBuilder()
-      .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          '# 🛒 • SPAWNER TRADING • 💰\n' +
-          '*Yayks Spawner Trading*\n' +
-          '*||Only Trusted Trader, Faire Preise 💜||*'
-        )
-      )
-      .addSeparatorComponents(
-        new SeparatorBuilder()
-          .setSpacing(1)
-          .setDivider(true)
-      )
-      .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(content)
-      );
-
-    await interaction.reply({
-      components: [spawnerPanelContainer],
-      flags: MessageFlags.IsComponentsV2
+    await interaction.update({
+      components: [header, table, refreshButton]
     });
   }
 
-if (interaction.commandName === 'preise-setzen') {
-  const spawnerName = interaction.options.getString('spawner');
-  const kaufpreis = interaction.options.getNumber('kauf');
-  const verkaufspreis = interaction.options.getNumber('verkauf');
+  if (interaction.isChatInputCommand()) {
+    if (interaction.commandName === 'spawner-panel') {
+      if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
+        return interaction.reply({
+          content: 'Du hast keine Berechtigung, diesen Befehl zu nutzen.',
+          flags: MessageFlags.Ephemeral
+        });
+      }
 
-  console.log(`🔄 UPDATE: ${spawnerName} auf Kauf=${kaufpreis}M, Verkauf=${verkaufspreis}M`);
+      const { header, table, refreshButton } = buildPanelContent();
 
-  const result = updateSpawnerPreis(spawnerName, kaufpreis, verkaufspreis);
-  console.log(`✅ Update Rows affected: ${result.changes}`);
+      await interaction.reply({
+        components: [header, table, refreshButton],
+        flags: MessageFlags.IsComponentsV2
+      });
+    }
 
-  const existingPrice = getSpawnerPreis(spawnerName);
-  console.log(`📖 Neuladen aus DB: Kauf=${existingPrice.kaufpreis}, Verkauf=${existingPrice.verkaufspreis}`);
+    if (interaction.commandName === 'preise-setzen') {
+      const spawnerName = interaction.options.getString('spawner');
+      const kaufpreis = interaction.options.getNumber('kauf');
+      const verkaufspreis = interaction.options.getNumber('verkauf');
 
-  if (!existingPrice) {
-    return interaction.reply({
-      content: `❌ Spawner "${spawnerName}" existiert nicht.`,
-      flags: MessageFlags.Ephemeral
-    });
+      const existingPrice = getSpawnerPreis(spawnerName);
+      if (!existingPrice) {
+        return interaction.reply({
+          content: `❌ Spawner "${spawnerName}" existiert nicht.`,
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+      updateSpawnerPreis(spawnerName, kaufpreis, verkaufspreis);
+
+      await interaction.reply({
+        content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${formatMillions(kaufpreis)}\n💰 Verkauf: ${formatMillions(verkaufspreis)}\n\n💡 Nutze den ↻ Aktualisieren-Button im Panel, um die Werte live zu sehen!`,
+        flags: MessageFlags.Ephemeral
+      });
+    }
   }
-
-  await interaction.reply({
-    content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${formatMillions(kaufpreis)}\n💰 Verkauf: ${formatMillions(verkaufspreis)}`,
-    flags: MessageFlags.Ephemeral
-  });
-}
 });
-
-console.log('📊 DB Reset durchgeführt');
-console.log('💀 Skelly angelegt:', getSpawnerPreis('💀 Skelly'));
-console.log('💥 Creeper angelegt:', getSpawnerPreis('💥 Creeper'));
-console.log('Alle Spawner:', getAllSpawnerPreise());
-console.log('\n=== DATABASE STATUS ===');
-console.log('Alle Spawner in DB:', getAllSpawnerPreise());
-console.log('=======================\n');
 
 client.login(process.env.DISCORD_BOT_TOKEN);
