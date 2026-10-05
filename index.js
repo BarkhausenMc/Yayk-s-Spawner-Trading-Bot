@@ -72,24 +72,22 @@ async function buildPanel() {
         .setSpacing(1)
         .setDivider(true)
     )
-    .addTextDisplayComponents()
+    .addTextDisplayComponents(  
       new TextDisplayBuilder().setContent(
         '💰 **VERKAUFEN** — Du **verkaufst** uns deine Spawner\n' +
         '🛒 **ANKAUF** — Du **kaufst** unsere Spawner'
       )
-
+    )  
     .addSeparatorComponents(
       new SeparatorBuilder()
         .setSpacing(1)
         .setDivider(true)
     )
-
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         'Klicke unten auf den `💰 VERKAUFEN` oder `🛒 ANKAUF` Button,\num einen Trade zu Starten.'
       )
     )
-
     const spawnerBuyRow = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('spawner-kaufen')
