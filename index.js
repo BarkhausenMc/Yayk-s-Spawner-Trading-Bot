@@ -22,14 +22,23 @@ const {
   getAllSpawnerPreise,
   getSpawnerPreis,
   updateSpawnerPreis,
-  resetDatabase,
   savePanelMessage,
-  getPanelMessage
+  getPanelMessage,
+  getNextTradeNumber
 } = require('./database');
-
 
 initDefaultSpawner('💀 Skelly', 0, 0);
 initDefaultSpawner('💥 Creeper', 0, 0);
+
+function getSpawnerEmoji(spawnerName) {
+  const emojis = {
+    '💀 Skelly': '💀',
+    '💥 Creeper': '💥',
+  };
+
+  return emojis[spawnerName] || '🔹';
+}
+
 
 const client = new Client({
   intents: [
@@ -383,6 +392,8 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   const gesamtpreis = spawnerPreis.kaufpreis * anzahl;
+  const tradeNumber = getNextTradeNumber();
+
 
   const thread = await interaction.channel.threads.create({
     name: `🛒 ${minecraftName} - ${anzahl} ${spawnerName}`,
@@ -406,7 +417,8 @@ client.on('interactionCreate', async (interaction) => {
 const ticketKaufenContainer = new ContainerBuilder()
   .addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      '# 🛒 Spawner Kauf Anfrage'
+      '# 🛒 • Spawner Kaufen\n' +
+      `🤝 • Handel #${tradeNumber}`
     )
   )
   .addSeparatorComponents(
@@ -416,13 +428,22 @@ const ticketKaufenContainer = new ContainerBuilder()
   )
   .addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      `**Minecraft Name:** ${minecraftName}\n` +
-      `**Spawner:** ${spawnerName}\n` +
-      `**Anzahl:** ${anzahl}\n` +
-      `**Preis pro Spawner:** ${formatMillions(spawnerPreis.kaufpreis)}\n` +
-      `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
-      `**Discord:** ${interaction.user}`
+      `**👤 Kunde:** ${interaction.user}\n` +
+      `**🎮 ING:** \`${minecraftName}\`\n` +
+      `${getSpawnerEmoji(spawnerName)} **Spawner:** ${spawnerName}` 
     )
+  )
+    .addSeparatorComponents(
+    new SeparatorBuilder()
+      .setSpacing(1)
+      .setDivider(true)
+  )
+  .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `**📦 Menge:** ${anzahl}\n` +
+        `**💵 Preis/Stk:** ${formatMillions(spawnerPreis.kaufpreis)}\n` +
+        `**💰 Gesamtpreis:** ${formatMillions(gesamtpreis)}` 
+      )
   )
   .addSeparatorComponents(
     new SeparatorBuilder()
@@ -484,6 +505,8 @@ await thread.send({
   }
 
   const gesamtpreis = spawnerPreis.verkaufspreis * anzahl;
+  const tradeNumber = getNextTradeNumber();
+
 
   const thread = await interaction.channel.threads.create({
     name: `💰 ${minecraftName} - ${anzahl} ${spawnerName}`,
@@ -507,7 +530,8 @@ await thread.send({
 const ticketVerkaufContainer = new ContainerBuilder()
   .addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      '# 💰 Spawner Verkauf Anfrage'
+      '# 💰 Spawner Verkauf Anfrage\n' +
+      `🤝 • Handel #${tradeNumber}`
     )
   )
   .addSeparatorComponents(
@@ -515,15 +539,24 @@ const ticketVerkaufContainer = new ContainerBuilder()
       .setSpacing(1)
       .setDivider(true)
   )
-  .addTextDisplayComponents(
+    .addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      `**Minecraft Name:** ${minecraftName}\n` +
-      `**Spawner:** ${spawnerName}\n` +
-      `**Anzahl:** ${anzahl}\n` +
-      `**Preis pro Spawner:** ${formatMillions(spawnerPreis.verkaufspreis)}\n` +
-      `**Gesamtpreis:** ${formatMillions(gesamtpreis)}\n` +
-      `**Discord:** ${interaction.user}`
+      `**👤 Kunde:** ${interaction.user}\n` +
+      `**🎮 ING:** \`${minecraftName}\`\n` +
+      `${getSpawnerEmoji(spawnerName)} **Spawner:** ${spawnerName}` 
     )
+  )
+    .addSeparatorComponents(
+    new SeparatorBuilder()
+      .setSpacing(1)
+      .setDivider(true)
+  )
+  .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `**📦 Menge:** ${anzahl}\n` +
+        `**💵 Preis/Stk:** ${formatMillions(spawnerPreis.kaufpreis)}\n` +
+        `**💰 Gesamtpreis:** ${formatMillions(gesamtpreis)}` 
+      )
   )
   .addSeparatorComponents(
     new SeparatorBuilder()
