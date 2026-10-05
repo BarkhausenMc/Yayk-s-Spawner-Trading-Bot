@@ -12,7 +12,9 @@ const {
   ButtonStyle,
   ModalBuilder,
   TextInputBuilder,
-  TextInputStyle
+  TextInputStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder
 } = require('discord.js');
 
 const {
@@ -209,8 +211,76 @@ client.on('interactionCreate', async (interaction) => {
 client.on('interactionCreate', async (interaction) => {
   if (interaction.isButton()) {
     if (interaction.customId === 'spawner-kaufen') {
+      const spawnerData = getAllSpawnerPreise();
+
+      const spawnerSelect = new StringSelectMenuBuilder()
+        .setCustomId('spawner-kaufen-select')
+        .setPlaceholder('Wähle einen Spawner aus')
+        .addOptions(
+          spawnerData.map(({ spawner_name, kaufpreis }) =>
+            new StringSelectMenuOptionBuilder()
+              .setLabel(spawner_name)
+              .setDescription(`🛒 Kaufpreis: ${formatMillions(kaufpreis)}`)
+              .setValue(spawner_name)
+          )
+        );
+
+      const spawnerSelectContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            '# 🛒 • SPAWNER KAUFEN\n\n' +
+            'Wähle den Spawner aus, den du kaufen möchtest.'
+          )
+        )
+        .addActionRowComponents(
+          new ActionRowBuilder().addComponents(spawnerSelect)
+        );
+
+      return interaction.reply({
+        components: [spawnerSelectContainer],
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+      });
+    }
+
+    if (interaction.customId === 'spawner-verkaufen') {
+      const spawnerData = getAllSpawnerPreise();
+
+      const spawnerSelect = new StringSelectMenuBuilder()
+        .setCustomId('spawner-verkaufen-select')
+        .setPlaceholder('Wähle einen Spawner aus')
+        .addOptions(
+          spawnerData.map(({ spawner_name, verkaufspreis }) =>
+            new StringSelectMenuOptionBuilder()
+              .setLabel(spawner_name)
+              .setDescription(`💰 Verkaufspreis: ${formatMillions(verkaufspreis)}`)
+              .setValue(spawner_name)
+          )
+        );
+
+      const spawnerSelectContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            '# 💰 • SPAWNER VERKAUFEN\n\n' +
+            'Wähle den Spawner aus, den du verkaufen möchtest.'
+          )
+        )
+        .addActionRowComponents(
+          new ActionRowBuilder().addComponents(spawnerSelect)
+        );
+
+      return interaction.reply({
+        components: [spawnerSelectContainer],
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+      });
+    }
+  }
+
+  if (interaction.isStringSelectMenu()) {
+    const spawnerName = interaction.values[0];
+
+    if (interaction.customId === 'spawner-kaufen-select') {
       const spawnerKaufenModal = new ModalBuilder()
-        .setCustomId('spawner-kaufen-modal')
+        .setCustomId(`spawner-kaufen-modal`)
         .setTitle('Spawner Kaufen');
 
       const minecraftName = new TextInputBuilder()
@@ -235,9 +305,9 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.showModal(spawnerKaufenModal);
     }
 
-    if (interaction.customId === 'spawner-verkaufen') {
+    if (interaction.customId === 'spawner-verkaufen-select') {
       const spawnerVerkaufenModal = new ModalBuilder()
-        .setCustomId('spawner-verkaufen-modal')
+        .setCustomId(`spawner-verkaufen-modal`)
         .setTitle('Spawner Verkaufen');
 
       const minecraftName = new TextInputBuilder()
@@ -360,4 +430,5 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 });
+
 client.login(process.env.DISCORD_BOT_TOKEN);
