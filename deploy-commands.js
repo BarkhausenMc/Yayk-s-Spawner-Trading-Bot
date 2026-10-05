@@ -22,15 +22,17 @@ const commands = [
           { name: '💥 Creeper', value: '💥 Creeper' }
         )
     )
-    .addIntegerOption(option =>
+    .addNumberOption(option =>
       option.setName('kauf')
-        .setDescription('Neuer Kaufpreis (in Millionen, z.B. 14 für 14M)')
+        .setDescription('Neuer Kaufpreis (in Millionen, z.B. 14 oder 14.5)')
         .setRequired(true)
+        .setMinValue(0)
     )
-    .addIntegerOption(option =>
+    .addNumberOption(option =>
       option.setName('verkauf')
-        .setDescription('Neuer Verkaufspreis (in Millionen, z.B. 12 für 12M)')
+        .setDescription('Neuer Verkaufspreis (in Millionen, z.B. 12 oder 12.5)')
         .setRequired(true)
+        .setMinValue(0)
     )
 ];
 

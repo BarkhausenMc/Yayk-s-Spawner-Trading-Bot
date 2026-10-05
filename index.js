@@ -14,12 +14,12 @@ const {
   getAllSpawnerPreise,
   getSpawnerPreis,
   updateSpawnerPreis,
-  getAllSpawnerNamen,
   resetDatabase
 } = require('./database');
 
 const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;
 
+resetDatabase();
 initDefaultSpawner('💀 Skelly', 0, 0);
 initDefaultSpawner('💥 Creeper', 0, 0);
 
@@ -31,7 +31,13 @@ const client = new Client({
 });
 
 function formatMillions(millions) {
-  return millions >= 1000 ? (millions / 1000) + 'B' : millions + 'M';
+  if (millions >= 1000) {
+    return (millions / 1000).toFixed(1) + 'B';
+  }
+  if (millions % 1 === 0) {
+    return millions + 'M';
+  }
+  return millions.toFixed(1) + 'M';
 }
 
 client.on('interactionCreate', async (interaction) => {
@@ -52,7 +58,7 @@ client.on('interactionCreate', async (interaction) => {
     ).join('\n');
 
     const content =
-      '```SPAWNER       🛒KAUFEN     💰VERKAUF\n' +
+      '```SPAWNER         🛒ANKAUF     💰VERKAUF\n' +
       '─────────────────────────────────────────────\n' +
       rows +
       '\n─────────────────────────────────────────────```';
@@ -82,8 +88,8 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.commandName === 'preise-setzen') {
     const spawnerName = interaction.options.getString('spawner');
-    const kaufpreis = interaction.options.getInteger('kauf');
-    const verkaufspreis = interaction.options.getInteger('verkauf');
+    const kaufpreis = interaction.options.getNumber('kauf');
+    const verkaufspreis = interaction.options.getNumber('verkauf');
 
     const existingPrice = getSpawnerPreis(spawnerName);
     if (!existingPrice) {

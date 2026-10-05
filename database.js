@@ -5,8 +5,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS spawner_preise (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     spawner_name TEXT UNIQUE NOT NULL,
-    kaufpreis INTEGER NOT NULL,
-    verkaufspreis INTEGER NOT NULL,
+    kaufpreis REAL NOT NULL,
+    verkaufspreis REAL NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
@@ -14,14 +14,14 @@ db.exec(`
 
 function initDefaultSpawner(name, kauf, verkauf) {
   const stmt = db.prepare(`
-    INSERT OR IGNORE INTO spawner_preise (spawner_name, kaufpreis, verkaufspreis)
+    INSERT OR REPLACE INTO spawner_preise (spawner_name, kaufpreis, verkaufspreis)
     VALUES (?, ?, ?)
   `);
   stmt.run(name, kauf, verkauf);
 }
 
 function getAllSpawnerPreise() {
-  return db.prepare('SELECT spawner_name, kaufpreis, verkaufspreis FROM spawner_preise').all();
+  return db.prepare('SELECT spawner_name, kaufpreis, verkaufspreis FROM spawner_preise ORDER BY spawner_name ASC').all();
 }
 
 function getSpawnerPreis(spawnerName) {
@@ -36,19 +36,22 @@ function updateSpawnerPreis(spawnerName, kauf, verkauf) {
   `).run(kauf, verkauf, spawnerName);
 }
 
-function addSpawner(name, kauf, verkauf) {
-  return db.prepare(`
-    INSERT OR REPLACE INTO spawner_preise (spawner_name, kaufpreis, verkaufspreis)
-    VALUES (?, ?, ?)
-  `).run(name, kauf, verkauf);
-}
-
 function getAllSpawnerNamen() {
   return db.prepare('SELECT spawner_name FROM spawner_preise').all().map(row => row.spawner_name);
 }
 
-function deleteSpawner(spawnerName) {
-  return db.prepare('DELETE FROM spawner_preise WHERE spawner_name = ?').run(spawnerName);
+function resetDatabase() {
+  db.prepare('DROP TABLE IF EXISTS spawner_preise').run();
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS spawner_preise (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      spawner_name TEXT UNIQUE NOT NULL,
+      kaufpreis REAL NOT NULL,
+      verkaufspreis REAL NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 module.exports = {
@@ -57,7 +60,6 @@ module.exports = {
   getAllSpawnerPreise,
   getSpawnerPreis,
   updateSpawnerPreis,
-  addSpawner,
   getAllSpawnerNamen,
-  deleteSpawner
+  resetDatabase
 };
