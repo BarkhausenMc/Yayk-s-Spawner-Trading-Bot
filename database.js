@@ -2,11 +2,7 @@ const Database = require('better-sqlite3');
 
 const db = new Database('./trading.db');
 
-/*
-|--------------------------------------------------------------------------
-| SPAWNER PREISE
-|--------------------------------------------------------------------------
-*/
+db.pragma('journal_mode = WAL');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS spawner_preise (
@@ -19,12 +15,6 @@ db.exec(`
   )
 `);
 
-/*
-|--------------------------------------------------------------------------
-| PANEL MESSAGES
-|--------------------------------------------------------------------------
-*/
-
 db.exec(`
   CREATE TABLE IF NOT EXISTS panel_messages (
     guild_id TEXT PRIMARY KEY,
@@ -34,12 +24,6 @@ db.exec(`
   )
 `);
 
-/*
-|--------------------------------------------------------------------------
-| TRADE COUNTER
-|--------------------------------------------------------------------------
-*/
-
 db.exec(`
   CREATE TABLE IF NOT EXISTS trade_counter (
     id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -47,62 +31,38 @@ db.exec(`
   )
 `);
 
-/*
-|--------------------------------------------------------------------------
-| TRADES
-|--------------------------------------------------------------------------
-*/
-
 db.exec(`
   CREATE TABLE IF NOT EXISTS trades (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-
     trade_number INTEGER UNIQUE NOT NULL,
-
     guild_id TEXT NOT NULL,
-    channel_id TEXT NOT NULL,
     thread_id TEXT UNIQUE NOT NULL,
-    message_id TEXT,
 
     customer_id TEXT NOT NULL,
     trader_id TEXT,
-
-    type TEXT NOT NULL,
 
     minecraft_name TEXT NOT NULL,
     spawner_name TEXT NOT NULL,
 
     amount INTEGER NOT NULL,
-
-    price_per_unit REAL NOT NULL,
+    price_per_item REAL NOT NULL,
     total_price REAL NOT NULL,
 
-    claimed INTEGER NOT NULL DEFAULT 0,
-    bought INTEGER NOT NULL DEFAULT 0,
-
-    close_requested_by TEXT,
+    trade_type TEXT NOT NULL,
 
     status TEXT NOT NULL DEFAULT 'open',
+
+    close_requester_id TEXT,
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
-/*
-|--------------------------------------------------------------------------
-| TRADE NUMBER
-|--------------------------------------------------------------------------
-*/
-
 function getNextTradeNumber() {
   const transaction = db.transaction(() => {
     const existing = db
-      .prepare(`
-        SELECT trade_number
-        FROM trade_counter
-        WHERE id = 1
-      `)
+      .prepare('SELECT trade_number FROM trade_counter WHERE id = 1')
       .get();
 
     if (!existing) {
@@ -128,12 +88,6 @@ function getNextTradeNumber() {
   return transaction();
 }
 
-/*
-|--------------------------------------------------------------------------
-| SPAWNER
-|--------------------------------------------------------------------------
-*/
-
 function initDefaultSpawner(name, kauf, verkauf) {
   const stmt = db.prepare(`
     INSERT OR IGNORE INTO spawner_preise
@@ -147,10 +101,7 @@ function initDefaultSpawner(name, kauf, verkauf) {
 function getAllSpawnerPreise() {
   return db
     .prepare(`
-      SELECT
-        spawner_name,
-        kaufpreis,
-        verkaufspreis
+      SELECT spawner_name, kaufpreis, verkaufspreis
       FROM spawner_preise
       ORDER BY spawner_name ASC
     `)
@@ -160,9 +111,7 @@ function getAllSpawnerPreise() {
 function getSpawnerPreis(spawnerName) {
   return db
     .prepare(`
-      SELECT
-        kaufpreis,
-        verkaufspreis
+      SELECT kaufpreis, verkaufspreis
       FROM spawner_preise
       WHERE spawner_name = ?
     `)
@@ -173,30 +122,13 @@ function updateSpawnerPreis(spawnerName, kauf, verkauf) {
   return db
     .prepare(`
       UPDATE spawner_preise
-      SET
-        kaufpreis = ?,
-        verkaufspreis = ?,
-        updated_at = CURRENT_TIMESTAMP
+      SET kaufpreis = ?,
+          verkaufspreis = ?,
+          updated_at = CURRENT_TIMESTAMP
       WHERE spawner_name = ?
     `)
     .run(kauf, verkauf, spawnerName);
 }
-
-function getAllSpawnerNamen() {
-  return db
-    .prepare(`
-      SELECT spawner_name
-      FROM spawner_preise
-    `)
-    .all()
-    .map(row => row.spawner_name);
-}
-
-/*
-|--------------------------------------------------------------------------
-| PANEL
-|--------------------------------------------------------------------------
-*/
 
 function savePanelMessage(guildId, channelId, messageId) {
   const stmt = db.prepare(`
@@ -211,63 +143,65 @@ function savePanelMessage(guildId, channelId, messageId) {
 function getPanelMessage(guildId) {
   return db
     .prepare(`
-      SELECT
-        channel_id,
-        message_id
+      SELECT channel_id, message_id
       FROM panel_messages
       WHERE guild_id = ?
     `)
     .get(guildId);
 }
 
-/*
-|--------------------------------------------------------------------------
-| TRADES
-|--------------------------------------------------------------------------
-*/
+function getAllSpawnerNamen() {
+  return db
+    .prepare(`
+      SELECT spawner_name
+      FROM spawner_preise
+    `)
+    .all()
+    .map(row => row.spawner_name);
+}
+
+/* =========================================================
+   TRADES
+========================================================= */
 
 function createTrade({
   tradeNumber,
   guildId,
-  channelId,
   threadId,
   customerId,
-  type,
   minecraftName,
   spawnerName,
   amount,
-  pricePerUnit,
-  totalPrice
+  pricePerItem,
+  totalPrice,
+  tradeType
 }) {
-  const stmt = db.prepare(`
+  return db.prepare(`
     INSERT INTO trades (
       trade_number,
       guild_id,
-      channel_id,
       thread_id,
       customer_id,
-      type,
       minecraft_name,
       spawner_name,
       amount,
-      price_per_unit,
-      total_price
+      price_per_item,
+      total_price,
+      trade_type,
+      status
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  return stmt.run(
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')
+  `).run(
     tradeNumber,
     guildId,
-    channelId,
     threadId,
     customerId,
-    type,
     minecraftName,
     spawnerName,
     amount,
-    pricePerUnit,
-    totalPrice
+    pricePerItem,
+    totalPrice,
+    tradeType
   );
 }
 
@@ -281,98 +215,90 @@ function getTradeByThreadId(threadId) {
     .get(threadId);
 }
 
-function getTradeByNumber(tradeNumber) {
+function getTradeById(id) {
   return db
     .prepare(`
       SELECT *
       FROM trades
-      WHERE trade_number = ?
+      WHERE id = ?
     `)
-    .get(tradeNumber);
-}
-
-function setTradeMessageId(threadId, messageId) {
-  db.prepare(`
-    UPDATE trades
-    SET
-      message_id = ?,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE thread_id = ?
-  `).run(messageId, threadId);
+    .get(id);
 }
 
 function claimTrade(threadId, traderId) {
-  db.prepare(`
+  return db.prepare(`
     UPDATE trades
     SET
-      claimed = 1,
       trader_id = ?,
+      status = 'claimed',
       updated_at = CURRENT_TIMESTAMP
     WHERE thread_id = ?
+      AND status = 'open'
   `).run(traderId, threadId);
 }
 
-function releaseTrade(threadId) {
-  db.prepare(`
+function releaseTrade(threadId, traderId) {
+  return db.prepare(`
     UPDATE trades
     SET
-      claimed = 0,
       trader_id = NULL,
-      bought = 0,
+      status = 'open',
       updated_at = CURRENT_TIMESTAMP
     WHERE thread_id = ?
-  `).run(threadId);
+      AND trader_id = ?
+      AND status = 'claimed'
+  `).run(threadId, traderId);
 }
 
-function markTradeBought(threadId) {
-  db.prepare(`
+function markTradeBought(threadId, traderId) {
+  return db.prepare(`
     UPDATE trades
     SET
-      bought = 1,
+      status = 'bought',
       updated_at = CURRENT_TIMESTAMP
     WHERE thread_id = ?
-  `).run(threadId);
+      AND trader_id = ?
+      AND status = 'claimed'
+  `).run(threadId, traderId);
 }
 
-function setCloseRequest(threadId, userId) {
-  db.prepare(`
+function createCloseRequest(threadId, requesterId) {
+  return db.prepare(`
     UPDATE trades
     SET
-      close_requested_by = ?,
+      close_requester_id = ?,
+      status = 'close_requested',
       updated_at = CURRENT_TIMESTAMP
     WHERE thread_id = ?
-  `).run(userId, threadId);
+      AND status IN ('open', 'claimed')
+      AND close_requester_id IS NULL
+  `).run(requesterId, threadId);
 }
 
-function clearCloseRequest(threadId) {
-  db.prepare(`
+function cancelCloseRequest(threadId) {
+  return db.prepare(`
     UPDATE trades
     SET
-      close_requested_by = NULL,
+      close_requester_id = NULL,
+      status = CASE
+        WHEN trader_id IS NULL THEN 'open'
+        ELSE 'claimed'
+      END,
       updated_at = CURRENT_TIMESTAMP
     WHERE thread_id = ?
+      AND status = 'close_requested'
   `).run(threadId);
 }
 
 function closeTrade(threadId) {
-  db.prepare(`
+  return db.prepare(`
     UPDATE trades
     SET
       status = 'closed',
       updated_at = CURRENT_TIMESTAMP
     WHERE thread_id = ?
+      AND status = 'close_requested'
   `).run(threadId);
-}
-
-function getOpenTrades() {
-  return db
-    .prepare(`
-      SELECT *
-      FROM trades
-      WHERE status = 'open'
-      ORDER BY created_at ASC
-    `)
-    .all();
 }
 
 module.exports = {
@@ -386,21 +312,17 @@ module.exports = {
 
   savePanelMessage,
   getPanelMessage,
-
   getNextTradeNumber,
 
   createTrade,
   getTradeByThreadId,
-  getTradeByNumber,
-  setTradeMessageId,
+  getTradeById,
 
   claimTrade,
   releaseTrade,
   markTradeBought,
 
-  setCloseRequest,
-  clearCloseRequest,
-  closeTrade,
-
-  getOpenTrades
+  createCloseRequest,
+  cancelCloseRequest,
+  closeTrade
 };
