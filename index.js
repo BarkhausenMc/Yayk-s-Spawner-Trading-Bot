@@ -77,10 +77,13 @@ async function buildPanel() {
         '💰 **VERKAUFEN** — Du **verkaufst** uns deine Spawner\n' +
         '🛒 **ANKAUF** — Du **kaufst** unsere Spawner'
       )
-    .addSeparatorComponents()
+
+    .addSeparatorComponents(
       new SeparatorBuilder()
         .setSpacing(1)
         .setDivider(true)
+    )
+
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         'Klicke unten auf den `💰 VERKAUFEN` oder `🛒 ANKAUF` Button,\num einen Trade zu Starten.'
