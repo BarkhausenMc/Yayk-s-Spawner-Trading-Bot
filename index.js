@@ -19,11 +19,10 @@ const {
   getPanelMessage
 } = require('./database');
 
-const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;
 
 resetDatabase();
-initDefaultSpawner('💀 Skelly', 14, 12);
-initDefaultSpawner('💥 Creeper', 20, 18);
+initDefaultSpawner('💀 Skelly', 0, 0);
+initDefaultSpawner('💥 Creeper', 0, 0);
 
 const client = new Client({
   intents: [
@@ -48,12 +47,16 @@ async function buildPanel() {
     `${spawner_name.padEnd(14)}${('🛒' + formatMillions(kaufpreis)).padEnd(14)}💰${formatMillions(verkaufspreis)}`
   ).join('\n');
 
-  const header = new ContainerBuilder()
+  const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         '# 🛒 • SPAWNER TRADING • 💰\n' +
         '*Yayks Spawner Trading*\n' +
-        '*||Only Trusted Trader, Faire Preise 💜||*'
+        '*||Only Trusted Trader, Faire Preise 💜||*' +
+        '\n\n```SPAWNER        🛒KAUFEN     💰VERKAUF\n' +
+        '─────────────────────────────────────────────\n' +
+        rows +
+        '\n─────────────────────────────────────────────```'
       )
     )
     .addSeparatorComponents(
@@ -62,17 +65,7 @@ async function buildPanel() {
         .setDivider(true)
     );
 
-  const table = new ContainerBuilder()
-    .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        '```SPAWNER         🛒ANKAUF     💰VERKAUF\n' +
-        '─────────────────────────────────────────────\n' +
-        rows +
-        '\n─────────────────────────────────────────────```'
-      )
-    );
-
-  return { header, table };
+  return container;
 }
 
 async function updateExistingPanel(guildId) {
@@ -92,8 +85,8 @@ async function updateExistingPanel(guildId) {
       return null;
     }
 
-    const { header, table } = await buildPanel();
-    await message.edit({ components: [header, table] });
+    const container = await buildPanel();
+    await message.edit({ components: [container] });
     return true;
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Panels:', error);
@@ -112,10 +105,10 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    const { header, table } = await buildPanel();
+    const container = await buildPanel();
 
     await interaction.reply({
-      components: [header, table],
+      components: [container],
       flags: MessageFlags.IsComponentsV2
     });
 
