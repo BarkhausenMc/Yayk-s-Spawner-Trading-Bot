@@ -7,7 +7,6 @@ const {
   TextDisplayBuilder,
   SeparatorBuilder,
   MessageFlags,
-  ActionRow,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle
@@ -39,21 +38,20 @@ function formatMillions(millions) {
   if (millions >= 1000) {
     return (millions / 1000).toFixed(1) + 'B';
   }
+
   if (millions % 1 === 0) {
     return millions + 'M';
   }
+
   return millions.toFixed(1) + 'M';
 }
 
-async function buildPanel() {
+function buildPanel() {
   const spawnerData = getAllSpawnerPreise();
+
   const rows = spawnerData.map(({ spawner_name, kaufpreis, verkaufspreis }) =>
     `${spawner_name.padEnd(14)}${('🛒' + formatMillions(kaufpreis)).padEnd(14)}💰${formatMillions(verkaufspreis)}`
   ).join('\n');
-
-//====================
-//Spawner Panel Conatiner
-//====================
 
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
@@ -72,12 +70,12 @@ async function buildPanel() {
         .setSpacing(1)
         .setDivider(true)
     )
-    .addTextDisplayComponents(  
+    .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         '💰 **VERKAUFEN** — Du **verkaufst** uns deine Spawner\n' +
         '🛒 **ANKAUF** — Du **kaufst** unsere Spawner'
       )
-    )  
+    )
     .addSeparatorComponents(
       new SeparatorBuilder()
         .setSpacing(1)
@@ -87,56 +85,57 @@ async function buildPanel() {
       new TextDisplayBuilder().setContent(
         'Klicke unten auf den `💰 VERKAUFEN` oder `🛒 ANKAUF` Button,\num einen Trade zu Starten.'
       )
-    )
-    const spawnerBuyRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('spawner-kaufen')
-        .setLabel('Spawner Kaufen')
-        .setEmoji('🛒')
-        .setStyle(ButtonStyle.Primary),
+    );
 
-      new ButtonBuilder()
-        .setCustomId('spawner-verkaufen')
-        .setLabel('Spawner Verkaufen')
-        .setEmoji('💰')
-        .setStyle(ButtonStyle.Success)
-    )
-    return { container, spawnerBuyRow };
+  const spawnerBuyRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('spawner-kaufen')
+      .setLabel('Spawner Kaufen')
+      .setEmoji('🛒')
+      .setStyle(ButtonStyle.Primary),
+
+    new ButtonBuilder()
+      .setCustomId('spawner-verkaufen')
+      .setLabel('Spawner Verkaufen')
+      .setEmoji('💰')
+      .setStyle(ButtonStyle.Success)
+  );
+
+  return { container, spawnerBuyRow };
 }
 
-
-//====================
-//Spawner Panel Aktualisieren
-//====================
 async function updateExistingPanel(guildId) {
   const savedPanel = getPanelMessage(guildId);
+
   if (!savedPanel) {
-    return null;
+    return false;
   }
 
   try {
     const channel = client.channels.cache.get(savedPanel.channel_id);
+
     if (!channel || !channel.isTextBased()) {
-      return null;
+      return false;
     }
 
     const message = await channel.messages.fetch(savedPanel.message_id);
+
     if (!message) {
-      return null;
+      return false;
     }
 
-    const { container, spawnerBuyRow } = await buildPanel();  
-    await message.edit({ components: [container, spawnerBuyRow] }); 
+    const { container, spawnerBuyRow } = buildPanel();
+
+    await message.edit({
+      components: [container, spawnerBuyRow]
+    });
+
     return true;
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Panels:', error);
-    return null;
+    return false;
   }
 }
-
-//====================
-//Spawner Panel in Channel senden
-//====================
 
 client.on('interactionCreate', async (interaction) => {
   if (interaction.commandName === 'spawner-panel') {
@@ -147,23 +146,26 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    const { container, spawnerBuyRow } = await buildPanel();
+    const { container, spawnerBuyRow } = buildPanel();
 
-    const reply = await interaction.reply({
+    const response = await interaction.reply({
       components: [container, spawnerBuyRow],
-      flags: MessageFlags.IsComponentsV2
+      flags: MessageFlags.IsComponentsV2,
+      withResponse: true
     });
 
-    savePanelMessage(
-      interaction.guildId,
-      interaction.channelId,
-      reply.id
-    );
+    const message = response.resource?.message;
+
+    if (message) {
+      savePanelMessage(
+        interaction.guildId,
+        interaction.channelId,
+        message.id
+      );
+    }
+
+    return;
   }
-  
-//====================
-//Spawner Preise setzen
-//====================
 
   if (interaction.commandName === 'preise-setzen') {
     const spawnerName = interaction.options.getString('spawner');
@@ -171,6 +173,7 @@ client.on('interactionCreate', async (interaction) => {
     const verkaufspreis = interaction.options.getNumber('verkauf');
 
     const existingPrice = getSpawnerPreis(spawnerName);
+
     if (!existingPrice) {
       return interaction.reply({
         content: `❌ Spawner "${spawnerName}" existiert nicht.`,
@@ -178,14 +181,21 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    updateSpawnerPreis(spawnerName, kaufpreis, verkaufspreis);
+    updateSpawnerPreis(
+      spawnerName,
+      kaufpreis,
+      verkaufspreis
+    );
 
     await interaction.reply({
-      content: `✅ Preise für ${spawnerName} aktualisiert!\n🛒 Kauf: ${formatMillions(kaufpreis)}\n💰 Verkauf: ${formatMillions(verkaufspreis)}`,
+      content:
+        `✅ Preise für ${spawnerName} aktualisiert!\n` +
+        `🛒 Kauf: ${formatMillions(kaufpreis)}\n` +
+        `💰 Verkauf: ${formatMillions(verkaufspreis)}`,
       flags: MessageFlags.Ephemeral
     });
 
-    updateExistingPanel(interaction.guildId);
+    await updateExistingPanel(interaction.guildId);
   }
 });
 
