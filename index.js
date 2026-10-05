@@ -147,18 +147,20 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    const { container, spawnerBuyRow } = await buildPanel();  
+    const { container, spawnerBuyRow } = await buildPanel();
 
     const reply = await interaction.reply({
-      components: [container, spawnerBuyRow],  
-      flags: MessageFlags.IsComponentsV2,
-      fetchReply: true
+      components: [container, spawnerBuyRow],
+      flags: MessageFlags.IsComponentsV2
     });
 
-    savePanelMessage(interaction.guildId, interaction.channelId, reply.id);
-    await interaction.deleteReply();
+    savePanelMessage(
+      interaction.guildId,
+      interaction.channelId,
+      reply.id
+    );
   }
-
+  
 //====================
 //Spawner Preise setzen
 //====================
