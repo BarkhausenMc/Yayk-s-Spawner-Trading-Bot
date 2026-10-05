@@ -98,7 +98,7 @@ client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'spawner-panel') {
-    if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
+    if (!interaction.member.roles.cache.has(process.env.ADMIN_ROLE_ID)) {
       return interaction.reply({
         content: 'Du hast keine Berechtigung, diesen Befehl zu nutzen.',
         flags: MessageFlags.Ephemeral
