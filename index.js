@@ -101,7 +101,7 @@ async function buildPanel() {
         .setEmoji('💰')
         .setStyle(ButtonStyle.Success)
     )
-    return [container, spawnerBuyRow];
+    return { container, spawnerBuyRow };
 }
 
 
@@ -125,8 +125,8 @@ async function updateExistingPanel(guildId) {
       return null;
     }
 
-    const { container, spawnerBuyRow } = await buildPanel();  // ✅ Destructuring
-    await message.edit({ components: [container, spawnerBuyRow] });  // ✅ Beide Components
+    const { container, spawnerBuyRow } = await buildPanel();  
+    await message.edit({ components: [container, spawnerBuyRow] }); 
     return true;
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Panels:', error);
